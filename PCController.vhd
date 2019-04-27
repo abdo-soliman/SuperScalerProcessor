@@ -20,7 +20,7 @@ architecture rtl of PCController is
 	signal incrementedPC:		std_logic_vector(n-1 downto 0) := (others => '0');
 begin
 	
-	pcI: work.PCIncrementer
+	pcI: entity work.PCIncrementer
 		generic map (n => 16)
 		port map (
 			input => currentPC,

@@ -15,7 +15,7 @@ architecture rtl of CPU is
 	signal pcControllerOut:		std_logic_vector(15 downto 0);
 	signal pcEnable:		std_logic := '1';
 	signal pcOut:			std_logic_vector(15 downto 0);
-	signal ROBnewPC:		std_logic_vector(15 downto 0) := std_logic_vector(50);
+	signal ROBnewPC:		std_logic_vector(15 downto 0) := "0000000001001000";
 	signal ROBwritePC:		std_logic := '0';
 	signal queueFull:		std_logic := '0';
 	signal memRead:			std_logic := '0';
@@ -26,7 +26,7 @@ architecture rtl of CPU is
 
 begin
 	
-	pc:	work.mRegister
+	pc: entity work.mRegister
 	generic map(n => 16)
 	port map (
 		input => pcControllerOut,
@@ -36,7 +36,7 @@ begin
 		output => pcOut
 	);
 
-	IR:	work.mRegister
+	IR:	entity work.mRegister
 	generic map(n => 16)
 	port map (
 		input => pcControllerOut,
@@ -46,15 +46,20 @@ begin
 		output => pcOut
 	);
 
-	pcCont:	work.PCController
-	generic map (
+	pcCont:	entity work.PCController
+	port map (
 		currentPC => pcOut,
 		JMPnewPC => ROBnewPC,
 		JMPWrite => ROBwritePC,
 		queueFull => queueFull,
 		newPC	 => pcControllerOut,
 		memRead => memRead
-	)
+	);
 
-	insRam:	work.
+	insRam:	entity work.InstructionRam
+	port map (
+		address => pcOut,
+		dataOut => ramOut
+	);
+
 end architecture rtl;

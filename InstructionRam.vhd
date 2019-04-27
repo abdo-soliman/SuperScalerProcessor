@@ -23,5 +23,5 @@ architecture rtl of InstructionRam is
 		--			end if;
 		--		end if;
 		--end process;
-		dataOut <= ram(to_integer(unsigned(address))) & ram(to_integer(unsigned(address+1)));
+		dataOut <= ram(to_integer(unsigned(address))) & ram(to_integer(unsigned(address))+1);
 end rtl;

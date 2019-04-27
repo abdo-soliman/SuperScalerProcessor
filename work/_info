@@ -9,329 +9,399 @@ z2
 cModel Technology
 d/home/ahmed/Downloads/DCNN-Accelerator/IO
 Ecpu
-w1556374340
-Z0 d/home/ahmed/Downloads/SuperScalerProcessor
-8/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd
-F/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd
+Z0 w1556378641
+Z1 DPx4 ieee 15 std_logic_arith 0 22 [G314=:2zXJ`VORJe1J@Z1
+Z2 DPx4 ieee 18 std_logic_unsigned 0 22 ;eZjO2D4ZDz<]0>8AL<ne1
+Z3 DPx3 std 6 textio 0 22 zE1`LPoLg^DX3Oz^4Fj1K3
+Z4 DPx4 ieee 14 std_logic_1164 0 22 eNV`TJ_GofJTzYa?f<@Oe1
+Z5 d/home/ahmed/Downloads/SuperScalerProcessor
+Z6 8/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd
+Z7 F/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd
 l0
-L1
-VP@JoemnQ740Id5jFN6oVG3
-!s100 =`_V<QY<5=XgOk;3Ui^mT0
-Z1 OV;C;10.6d;65
+L5
+V@`@lTAa[zOJ9KXfiFoD^G3
+!s100 FafB]Qj3Di0QZc4BD22GY2
+Z8 OV;C;10.6d;65
 32
-Z2 !s110 1556376279
+Z9 !s110 1556378649
 !i10b 1
-Z3 !s108 1556376279.000000
-!s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd|
-!s107 /home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd|
+Z10 !s108 1556378649.000000
+Z11 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd|
+Z12 !s107 /home/ahmed/Downloads/SuperScalerProcessor/CPU.vhd|
 !i113 1
-Z4 o-work work -2002 -explicit
-Z5 tExplicit 1 CvgOpt 0
+Z13 o-work work -2002 -explicit
+Z14 tExplicit 1 CvgOpt 0
+Artl
+Z15 DPx4 ieee 11 numeric_std 0 22 :ASDNFgHXf_ih3J@9F3Ze1
+Z16 DEx4 work 14 instructionram 0 22 8`a[n68[`O>Bc0cNjDMX32
+Z17 DEx4 work 12 pccontroller 0 22 6ljTzFEUZOnBf[G]oB1:l3
+Z18 DEx4 work 9 mregister 0 22 ^_M:DNSf`MDVE9@UjmF2C1
+R1
+R2
+R3
+R4
+DEx4 work 3 cpu 0 22 @`@lTAa[zOJ9KXfiFoD^G3
+l27
+L14
+V5^C^@f8OE_<mL@k2hX2EM0
+!s100 ooJ4dCn@?^7Uk>ad=R]lD0
+R8
+32
+R9
+!i10b 1
+R10
+R11
+R12
+!i113 1
+R13
+R14
 Ehabdology
-Z6 w1556373256
-Z7 DPx3 std 6 textio 0 22 zE1`LPoLg^DX3Oz^4Fj1K3
-Z8 DPx4 ieee 14 std_logic_1164 0 22 eNV`TJ_GofJTzYa?f<@Oe1
-R0
-Z9 8/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd
-Z10 F/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd
+Z19 w1556373256
+R3
+R4
+R5
+Z20 8/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd
+Z21 F/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd
 l0
 L4
 VYe4C7AnF;VCDXafNF;Qz32
 !s100 b>H0Ae[Yo=?_l=RL0eAgJ3
-R1
-32
-Z11 !s110 1556373264
-!i10b 1
-Z12 !s108 1556373264.000000
-Z13 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd|
-Z14 !s107 /home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd|
-!i113 1
-R4
-R5
-Artl
-R7
 R8
+32
+Z22 !s110 1556373264
+!i10b 1
+Z23 !s108 1556373264.000000
+Z24 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd|
+Z25 !s107 /home/ahmed/Downloads/SuperScalerProcessor/habdology.vhd|
+!i113 1
+R13
+R14
+Artl
+R3
+R4
 DEx4 work 9 habdology 0 22 Ye4C7AnF;VCDXafNF;Qz32
 l23
 L8
 Vi<A>UHU]=aSZgZUV<VNmK0
 !s100 :GMmM16jkjfBgj9TH<jWi2
-R1
+R8
 32
-R11
+R22
 !i10b 1
-R12
+R23
+R24
+R25
+!i113 1
 R13
 R14
-!i113 1
+Einstructionram
+Z26 w1556378376
+R15
+R3
 R4
 R5
-Emcounter
-Z15 w1555968054
-Z16 DPx4 ieee 15 std_logic_arith 0 22 [G314=:2zXJ`VORJe1J@Z1
-Z17 DPx4 ieee 18 std_logic_unsigned 0 22 ;eZjO2D4ZDz<]0>8AL<ne1
-R7
+Z27 8/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd
+Z28 F/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd
+l0
+L5
+V8`a[n68[`O>Bc0cNjDMX32
+!s100 9[6LgI54KUe::<X`nK:O80
 R8
-R0
-Z18 8/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd
-Z19 F/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd
+32
+R9
+!i10b 1
+R10
+Z29 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd|
+Z30 !s107 /home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd|
+!i113 1
+R13
+R14
+Artl
+R15
+R3
+R4
+R16
+l17
+L12
+Z31 VhVn[[7WJ4a=D[Y[KPBcid2
+Z32 !s100 Hm9YG^8JSR7zL=dFIj3jZ0
+R8
+32
+R9
+!i10b 1
+R10
+R29
+R30
+!i113 1
+R13
+R14
+Emcounter
+Z33 w1555968054
+R1
+R2
+R3
+R4
+R5
+Z34 8/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd
+Z35 F/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd
 l0
 L5
 VD2P:mQU8fbh=7m5I1<4W@3
 !s100 ciSNo7ABznNk5@8D;b2F?2
-R1
-32
-R2
-!i10b 1
-R3
-Z20 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd|
-Z21 !s107 /home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd|
-!i113 1
-R4
-R5
-Artl
-R16
-R17
-R7
 R8
+32
+R9
+!i10b 1
+R10
+Z36 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd|
+Z37 !s107 /home/ahmed/Downloads/DCNN-Accelerator/IO/mCounter.vhd|
+!i113 1
+R13
+R14
+Artl
+R1
+R2
+R3
+R4
 DEx4 work 8 mcounter 0 22 D2P:mQU8fbh=7m5I1<4W@3
 l20
 L18
 V[5^ETPf4oP6zl;f;SHccc2
 !s100 5>iZ9Rl<EA0heMW__cm0^1
-R1
+R8
 32
-R2
+R9
 !i10b 1
-R3
-R20
-R21
+R10
+R36
+R37
 !i113 1
+R13
+R14
+Emram
+Z38 w1555956955
+R15
+R3
 R4
 R5
-Emram
-Z22 w1555956955
-Z23 DPx4 ieee 11 numeric_std 0 22 :ASDNFgHXf_ih3J@9F3Ze1
-R7
-R8
-R0
-Z24 8/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd
-Z25 F/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd
+R27
+R28
 l0
 L5
 Vfj;gzHRB312V@DN^NB>^10
 !s100 h:cgIG69KT6zm7AdWQUj]0
-R1
-32
-R2
-!i10b 1
-R3
-Z26 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd|
-Z27 !s107 /home/ahmed/Downloads/SuperScalerProcessor/InstructionRam.vhd|
-!i113 1
-R4
-R5
-Artl
-R23
-R7
 R8
-Z28 DEx4 work 4 mram 0 22 fj;gzHRB312V@DN^NB>^10
+32
+Z39 !s110 1556376279
+!i10b 1
+Z40 !s108 1556376279.000000
+R29
+R30
+!i113 1
+R13
+R14
+Artl
+R15
+R3
+R4
+DEx4 work 4 mram 0 22 fj;gzHRB312V@DN^NB>^10
 l19
 L14
-Z29 Vg40T<NG=lzB>OTggYFIfO2
-Z30 !s100 mI`QAd[zXTN7hf_A=]l0c3
-R1
+Vg40T<NG=lzB>OTggYFIfO2
+!s100 mI`QAd[zXTN7hf_A=]l0c3
+R8
 32
-R2
+R39
 !i10b 1
-R3
-R26
-R27
+R40
+R29
+R30
 !i113 1
+R13
+R14
+Emregister
+Z41 w1556373541
+R3
 R4
 R5
-Emregister
-Z31 w1556373541
-R7
-R8
-R0
-Z32 8/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd
-Z33 F/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd
+Z42 8/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd
+Z43 F/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd
 l0
 L4
 V^_M:DNSf`MDVE9@UjmF2C1
 !s100 IN_oQ[:mFQO`jE7>Rn?:d1
-R1
-32
-R2
-!i10b 1
-R3
-Z34 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd|
-Z35 !s107 /home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd|
-!i113 1
-R4
-R5
-Artl
-R7
 R8
-Z36 DEx4 work 9 mregister 0 22 ^_M:DNSf`MDVE9@UjmF2C1
+32
+R9
+!i10b 1
+R10
+Z44 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd|
+Z45 !s107 /home/ahmed/Downloads/SuperScalerProcessor/mRegister.vhd|
+!i113 1
+R13
+R14
+Artl
+R3
+R4
+R18
 l12
 L11
 VDUG?h`7]0BfU<?dT[@a]Y0
 !s100 Dc8:?VK;62VAMACSBHECD3
-R1
-32
-R2
-!i10b 1
-R3
-R34
-R35
-!i113 1
-R4
-R5
-Amyregister
-R7
 R8
-R36
+32
+R9
+!i10b 1
+R10
+R44
+R45
+!i113 1
+R13
+R14
+Amyregister
+R3
+R4
+R18
 l12
 L11
 V[F2mmjhFD@XdbceiVkV5B2
 !s100 2Q8HXRSYWaNgo3j>Q3j7J3
-R1
+R8
 32
-R11
+R22
 !i10b 1
-R12
-Z37 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd|
-Z38 !s107 /home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd|
+R23
+Z46 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd|
+Z47 !s107 /home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd|
 !i113 1
+R13
+R14
+Z48 F/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd
+w1556372669
+Z49 8/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd
+Emregisterfalling
+Z50 w1556372414
+R3
 R4
 R5
-Z39 F/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd
-w1556372669
-Z40 8/home/ahmed/Downloads/SuperScalerProcessor/RegisterFalling.vhd
-Emregisterfalling
-Z41 w1556372414
-R7
-R8
-R0
-R40
-R39
+R49
+R48
 l0
 L4
 VlULh;N?njj;zF^]fRnmT^1
 !s100 XVZjP7?i3Af<;0f@k;BeP0
-R1
-32
-Z42 !s110 1556372456
-!i10b 1
-Z43 !s108 1556372456.000000
-R37
-R38
-!i113 1
-R4
-R5
-Amyregister
-R7
 R8
+32
+Z51 !s110 1556372456
+!i10b 1
+Z52 !s108 1556372456.000000
+R46
+R47
+!i113 1
+R13
+R14
+Amyregister
+R3
+R4
 DEx4 work 16 mregisterfalling 0 22 lULh;N?njj;zF^]fRnmT^1
 l11
 L10
 VS8R]Cf^[FlZUoD21NMJ<P0
 !s100 ;Qjoo]2JFloY=GY2aWffF3
-R1
+R8
 32
-R42
+R51
 !i10b 1
-R43
-R37
-R38
+R52
+R46
+R47
 !i113 1
+R13
+R14
+Epccontroller
+Z53 w1556378494
+R1
+R2
+R3
 R4
 R5
-Epccontroller
-Z44 w1556376242
-R16
-R17
-R7
-R8
-R0
-Z45 8/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd
-Z46 F/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd
+Z54 8/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd
+Z55 F/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd
 l0
 L6
 V6ljTzFEUZOnBf[G]oB1:l3
 !s100 cT;d_@LPSK7K3XgmC74z[1
-R1
+R8
 32
-R2
+R9
 !i10b 1
-R3
-Z47 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd|
-Z48 !s107 /home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd|
+R10
+Z56 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd|
+Z57 !s107 /home/ahmed/Downloads/SuperScalerProcessor/PCController.vhd|
 !i113 1
-R4
-R5
+R13
+R14
 Artl
-R16
-R17
-R7
-R8
-DEx4 work 12 pccontroller 0 22 6ljTzFEUZOnBf[G]oB1:l3
-l30
-L19
-ViUNUofi6@hJBlkFhl7>2I1
-!s100 :E`BL5]1?n8^6FQHIAKV`0
+Z58 DEx4 work 13 pcincrementer 0 22 4`Y15[nQHAV<2JDP@TB7<2
 R1
-32
 R2
-!i10b 1
 R3
-R47
-R48
+R4
+R17
+l21
+L19
+V>GBN]QPnG66FjXNIdJFbR2
+!s100 7TzHKnR?h]7LO[4;5jEo`2
+R8
+32
+R9
+!i10b 1
+R10
+R56
+R57
 !i113 1
+R13
+R14
+Epcincrementer
+Z59 w1556374324
+R1
+R2
+R3
 R4
 R5
-Epcincrementer
-Z49 w1556374324
-R16
-R17
-R7
-R8
-R0
-Z50 8/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd
-Z51 F/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd
+Z60 8/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd
+Z61 F/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd
 l0
 L6
 V4`Y15[nQHAV<2JDP@TB7<2
 !s100 gXm1<I;aVeb37:E?8bBh53
-R1
-32
-R2
-!i10b 1
-R3
-Z52 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd|
-Z53 !s107 /home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd|
-!i113 1
-R4
-R5
-Artl
-R16
-R17
-R7
 R8
-DEx4 work 13 pcincrementer 0 22 4`Y15[nQHAV<2JDP@TB7<2
+32
+R9
+!i10b 1
+R10
+Z62 !s90 -reportprogress|300|-work|work|-2002|-explicit|-stats=none|/home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd|
+Z63 !s107 /home/ahmed/Downloads/SuperScalerProcessor/PCIncrementer.vhd|
+!i113 1
+R13
+R14
+Artl
+R1
+R2
+R3
+R4
+R58
 l17
 L15
 Vbb3R[i=PHlOSBh7NFSBi?3
 !s100 jcma7L0GhbA16LJP`=VDo1
-R1
+R8
 32
-R2
+R9
 !i10b 1
-R3
-R52
-R53
+R10
+R62
+R63
 !i113 1
-R4
-R5
+R13
+R14

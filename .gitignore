@@ -63,6 +63,7 @@ usage_statistics_webtalk.html
 webtalk.log
 webtalk_pn.xml
 *.mpf
+*.mdf
 *.mti
 transcript
 *.wlf
@@ -76,4 +77,4 @@ _xmsgs/
 
 # miscellaneous
 .vscode/
-
+work/

@@ -5,7 +5,7 @@ entity mRegister is
 	generic (n: integer := 16);
 	port(	input : 			in std_logic_vector(n-1 downto 0);
 			enable,clk,reset :	in std_logic := '0';
-			output :			out std_logic_vector(n-1 downto 0));
+			output :			out std_logic_vector(n-1 downto 0) := (others => '0')) ;
 end entity mRegister;
 
 architecture rtl of mRegister is

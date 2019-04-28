@@ -13,21 +13,26 @@ end entity CPU;
 
 architecture rtl of CPU is
 	signal pcControllerOut:		std_logic_vector(15 downto 0);
-	signal pcEnable:		std_logic := '1';
-	signal pcOut:			std_logic_vector(15 downto 0);
-	signal ROBnewPC:		std_logic_vector(15 downto 0) := "0000000001001000";
-	signal ROBwritePC:		std_logic := '0';
-	signal queueFull:		std_logic := '0';
-	signal memRead:			std_logic := '0';
-	signal ROBEnableQueue:	std_logic := '1';
-	signal instQueueOut:	std_logic_vector(15 downto 0) := (others => '0');
+	signal pcEnable:			std_logic := '1';
+	signal pcOut:				std_logic_vector(15 downto 0);
+	signal ROBnewPC:			std_logic_vector(15 downto 0) := "0000000001001000";
+	signal ROBwritePC:			std_logic := '0';
+	signal queueFull:			std_logic := '0';
+	signal memRead:				std_logic := '0';
+	signal ROBEnableQueue:		std_logic := '1';
+	signal ROBFull:				std_logic := '0';
+	signal ROBEmpty:			std_logic := '0';
+	signal instQueueOut:		std_logic_vector(15 downto 0) := (others => '0');
 
 
 	--For testing
-	signal ramOut:			std_logic_vector(31 downto 0);
+	signal ramOut:				std_logic_vector(31 downto 0);
+	signal ROBOut:				std_logic_vector(15 downto 0);
 
 begin
 	
+	ROBEnableQueue <= not ROBFull;
+
 	pc: entity work.mRegister
 	generic map(n => 16)
 	port map (
@@ -62,7 +67,7 @@ begin
 	port map (
 		address => pcOut,
 		dataOut => ramOut,
-		readEnable => memRead,
+		readEnable => '1',
 		clk => clk
 	);
 
@@ -74,6 +79,16 @@ begin
         clk => clk,
         queueFull => queueFull,
         output => instQueueOut
+    );
+
+    rob: entity work.ReorderBuffer
+	port map(
+        instruction => instQueueOut,
+        reset => reset,
+        clk => clk,
+        ROBFull => ROBFull,
+        ROBEmpty => ROBEmpty,
+        output => ROBOut
     );
 		
 	

@@ -7,7 +7,7 @@ use IEEE.numeric_std.all;
 
 entity ReorderBuffer is
     generic ( length: integer := 16;
-    		 width: integer  := 16  --I changed this from 45 @Ahmed
+    		 width: integer  := 48 
     		 );
     port (
         instruction:	in      	std_logic_vector(width-1 downto 0) := (others => '0');
@@ -34,7 +34,62 @@ architecture rtl of ReorderBuffer is
     signal ROBEmptySignal: 			std_logic := '1';
     
 	
-	
+    -----------------------------Helper Functions-------------------------------
+    function OpCode(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic_vector is
+    begin
+        return entry(47 downto 43);
+    end OpCode;
+    ----------------------------------------------------------------------------
+    function Value(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic_vector is
+    begin
+        return entry(42 downto 27);
+    end Value;
+    ----------------------------------------------------------------------------
+    function ValueValid(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic is
+    begin
+        return entry(26);
+    end ValueValid;
+    ----------------------------------------------------------------------------
+    function DestinationAddress(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic_vector is
+    begin
+        return entry(25 downto 10);
+    end DestinationAddress;
+    ----------------------------------------------------------------------------
+    function DestinationRegister(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic_vector is
+    begin
+        return entry(9 downto 7);
+    end DestinationRegister;
+    ----------------------------------------------------------------------------
+    function WaitingTag(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic_vector is
+    begin
+        return entry(6 downto 3);
+    end WaitingTag;
+    ----------------------------------------------------------------------------
+    function Execute(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic is
+    begin
+        return entry(2);
+    end Execute;
+    ----------------------------------------------------------------------------
+    function Done(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic is
+    begin
+        return entry(1);
+    end Done;
+    ----------------------------------------------------------------------------
+    function Busy(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
+    					return  std_logic is
+    begin
+        return entry(0);
+    end Busy;
+
+
 begin
     output <= q(to_integer(unsigned(readPointer)));
     --ROBFullSignal <= '1' when tail = head

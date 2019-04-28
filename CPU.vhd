@@ -19,6 +19,8 @@ architecture rtl of CPU is
 	signal ROBwritePC:		std_logic := '0';
 	signal queueFull:		std_logic := '0';
 	signal memRead:			std_logic := '0';
+	signal ROBEnableQueue:	std_logic := '1';
+	signal instQueueOut:	std_logic_vector(15 downto 0) := (others => '0');
 
 
 	--For testing
@@ -59,7 +61,20 @@ begin
 	insRam:	entity work.InstructionRam
 	port map (
 		address => pcOut,
-		dataOut => ramOut
+		dataOut => ramOut,
+		readEnable => memRead,
+		clk => clk
 	);
 
+	instQueue: entity work.InstructionQueue
+	port map (
+        input => ramOut,      	
+        enable => ROBEnableQueue,
+        reset => reset,
+        clk => clk,
+        queueFull => queueFull,
+        output => instQueueOut
+    );
+		
+	
 end architecture rtl;

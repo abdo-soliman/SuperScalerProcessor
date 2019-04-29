@@ -11,9 +11,14 @@ entity ReorderBuffer is
     		 );
     port (
         instruction:	in      	std_logic_vector(width-1 downto 0) := (others => '0');
-        --aluTAG:	in      std_logic_vector(3 downto 0);  --I commented this @Ahmed
-        --Some other inputs
-
+        aluValue:       in          std_logic_vector(width-1 downto 0) := (others => '0');
+        aluTag:        in          std_logic_vector(3 downto 0) := (others => '0');
+        mememoryValue:  in          std_logic_vector(width-1 downto 0) := (others => '0');
+        memoryTag:     in          std_logic_vector(3 downto 0) := (others => '0');
+        aluTagValid:    in          std_logic := '0';
+        memoryTagValid: in          std_logic := '0';
+        flags:          in          std_logic_vector(2 downto 0); 
+        --memory and alu tags from the CBD
        	---------------------------------------------------------------------
         reset:			in      	std_logic := '0';
         clk:			in      	std_logic := '0';
@@ -95,12 +100,49 @@ architecture rtl of ReorderBuffer is
         --    else '0';-- and( OPcode(2) )= '0' and( OPcode(3) )= '0' and ( OPcode(4) )= '0' );
     end setDone;
     
-    procedure ay7aga(signal entry:    inout   std_logic_vector(width-1 downto 0)) is
-        variable temp : std_logic_vector(4 downto 0);
+    procedure updateTagAluMemory(signal    entry:             inout       std_logic_vector(width-1 downto 0);
+                                 signal    aluValue:          in          std_logic_vector(width-1 downto 0);
+                                 signal    aluTag:            in          std_logic_vector(3 downto 0) ;
+                                 signal    mememoryValue:      in          std_logic_vector(width-1 downto 0);
+                                 signal    memoryTag:         in          std_logic_vector(3 downto 0);
+                                 signal    aluTagValid:       in          std_logic := '0';
+                                 variable  index:             in          integer;
+                                 signal    memoryTagValid:    in          std_logic := '0';
+                                 signal    flags:             in          std_logic_vector(3 downto 0);
+                                 variable jumpZeroTrue:      out         std_logic;
+                                 variable jumpNegativeTrue:  out         std_logic;
+                                 variable jumpCarryTrue:     out         std_logic) is
+        variable OPcode:    std_logic_vector(4 downto 0);
+        variable doneBit:   std_logic;
+        variable validBit:  std_logic;
+        variable aluTagInt: integer := to_integer(unsigned(aluTag));
+        variable memoryTagInt: integer := to_integer(unsigned(memoryTag));
         begin
-            temp := OpCode(entry => entry);
-            entry(47 downto 43) <= temp; --kobaya
-        end ay7aga;
+            if (aluTagInt = index or memoryTagInt = index) then --no check on op code just the tag
+                entry(42 downto 27) <= aluValue;
+                entry(26) <= '1'; --value valid bit
+                validBit := '1';
+                entry(1) <= '1'; -- done bit
+                doneBit := '1';
+                if(OPcode(4) ='1' and OPcode(3) = '1' and OPcode(2) = '1' and OPcode(1) /= '1' and OPcode(0) /= '1' and validBit = '1' and doneBit = '1') then--check if any type of jumos except for unconidtional one
+                    if(OPcode(1) = '0' and OPcode(0) = '0') then --jump zero
+                        if(flags(2) = '1') then --if zero flag is one
+                            jumpZeroTrue := '1';
+                        end if;
+                    elsif (OPcode(1) = '0' and OPcode(0) = '1') then --jump negative
+                        if(flags(1) = '1') then --if zero flag is one
+                            jumpNegativeTrue := '1';
+                        end if;
+                    elsif (OPcode(1) = '1' and OPcode(0) = '0') then --jump carry
+                        if(flags(0) = '1') then --if zero flag is one
+                            jumpCarryTrue := '1';
+                        end if;
+                    end if;
+                end if;
+                  --done bit
+            end if;
+        --OPcode := OpCode(entry => entry);
+        end updateTagAluMemory;
 
 begin
     output <= q(to_integer(unsigned(readPointer)));

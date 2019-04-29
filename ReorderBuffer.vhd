@@ -105,9 +105,9 @@ architecture rtl of ReorderBuffer is
                                  signal    aluTag:            in          std_logic_vector(3 downto 0) ;
                                  signal    mememoryValue:      in          std_logic_vector(width-1 downto 0);
                                  signal    memoryTag:         in          std_logic_vector(3 downto 0);
-                                 signal    aluTagValid:       in          std_logic := '0';
+                                 signal    aluTagValid:       in          std_logic;
                                  variable  index:             in          integer;
-                                 signal    memoryTagValid:    in          std_logic := '0';
+                                 signal    memoryTagValid:    in          std_logic;
                                  signal    flags:             in          std_logic_vector(3 downto 0);
                                  variable jumpZeroTrue:      out         std_logic;
                                  variable jumpNegativeTrue:  out         std_logic;
@@ -115,11 +115,17 @@ architecture rtl of ReorderBuffer is
         variable OPcode:    std_logic_vector(4 downto 0);
         variable doneBit:   std_logic;
         variable validBit:  std_logic;
-        variable aluTagInt: integer := to_integer(unsigned(aluTag));
-        variable memoryTagInt: integer := to_integer(unsigned(memoryTag));
+        variable aluTagInt: integer;
+        variable memoryTagInt: integer;
         begin
+            aluTagInt  := to_integer(unsigned(aluTag));
+            memoryTagInt := to_integer(unsigned(memoryTag));
             if (aluTagInt = index or memoryTagInt = index) then --no check on op code just the tag
-                entry(42 downto 27) <= aluValue;
+                if(aluTagInt = index)then
+                    entry(42 downto 27) <= aluValue;
+                else 
+                    entry(42 downto 27) <= mememoryValue;
+                end if;
                 entry(26) <= '1'; --value valid bit
                 validBit := '1';
                 entry(1) <= '1'; -- done bit

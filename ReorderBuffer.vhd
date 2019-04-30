@@ -114,7 +114,7 @@ architecture rtl of ReorderBuffer is
     function checkJmpFamily(opCode:   std_logic_vector(4 downto 0))
                                 return std_logic is
     begin
-        if(opCode = JMPC_OPCODE or opCode = JMPN_OPCODE or opCode = JMPZ_OPCODE) then
+        if(opCode = JC_OPCODE or opCode = JN_OPCODE or opCode = JZ_OPCODE) then
             return '1';
         else
             return '0';
@@ -151,6 +151,30 @@ architecture rtl of ReorderBuffer is
         end if;
     end checkStore;
     ----------------------------------------------------------------------------
+    function checkTypeOne(opCode:   std_logic_vector(4 downto 0))
+                                return std_logic is
+    begin
+        if(opCode = MOV_OPCODE or opCode = AND_OPCODE or opCode = OR_OPCODE or 
+           opCode = ADD_OPCODE or opCode = SUB_OPCODE or opCode = SHL_OPCODE or
+           opCode = SHR_OPCODE) then
+            return '1';
+        else
+            return '0';
+        end if;
+    end checkTypeOne;
+    ----------------------------------------------------------------------------
+    function checkTypeZero(opCode:   std_logic_vector(4 downto 0))
+                                return std_logic is
+    begin
+        if(opCode = NOP_OPCODE or opCode = NOT_OPCODE or opCode = SETC_OPCODE or 
+           opCode = CLC_OPCODE or opCode = INC_OPCODE or opCode = DEC_OPCODE or
+           opCode = IN_OPCODE  or opCode = OUT_OPCODE) then
+            return '1';
+        else
+            return '0';
+        end if;
+    end checkTypeZero;
+    ----------------------------------------------------------------------------
     procedure updateTagAluMemory(signal    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(width-1 downto 0);
                                  signal    aluTag:            in          std_logic_vector(3 downto 0) ;
@@ -171,33 +195,61 @@ architecture rtl of ReorderBuffer is
         begin
             aluTagInt  := to_integer(unsigned(aluTag));
             memoryTagInt := to_integer(unsigned(memoryTag));
-            if (aluTagInt = index or memoryTagInt = index) then --no check on op code just the tag
-                if(aluTagInt = index)then
-                    entry(42 downto 27) <= aluValue;
-                else 
-                    entry(42 downto 27) <= mememoryValue;
-                end if;
-                entry(26) <= '1'; --value valid bit
-                validBit := '1';
-                entry(1) <= '1'; -- done bit
-                doneBit := '1';
-                if(OPcode(4) ='1' and OPcode(3) = '1' and OPcode(2) = '1' and OPcode(1) /= '1' and OPcode(0) /= '1' and validBit = '1' and doneBit = '1') then--check if any type of jumos except for unconidtional one
-                    if(OPcode(1) = '0' and OPcode(0) = '0') then --jump zero
-                        if(flags(2) = '1') then --if zero flag is one
-                            jumpZeroTrue := '1';
-                        end if;
-                    elsif (OPcode(1) = '0' and OPcode(0) = '1') then --jump negative
-                        if(flags(1) = '1') then --if zero flag is one
-                            jumpNegativeTrue := '1';
-                        end if;
-                    elsif (OPcode(1) = '1' and OPcode(0) = '0') then --jump carry
-                        if(flags(0) = '1') then --if zero flag is one
-                            jumpCarryTrue := '1';
-                        end if;
+
+            if (checkTypeZero(OPcode) = '1') then
+                if ((aluTagInt = index and aluTagValid = '1') or 
+                    (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
+
+                    if(aluTagInt = index )then
+                        entry(42 downto 27) <= aluValue;
+                    else
+                        entry(42 downto 27) <= mememoryValue;
                     end if;
+                    entry(26) <= '1'; --value valid bit
+                    validBit := '1';
+                    entry(1) <= '1'; -- done bit
+                    doneBit := '1';
                 end if;
-                  --done bit
             end if;
+
+            if (checkTypeOne(OPcode) = '1') then
+
+                if ((aluTagInt = index and aluTagValid = '1') or 
+                    (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
+
+                    if(aluTagInt = index )then
+                        entry(42 downto 27) <= aluValue;
+                    else
+                        entry(42 downto 27) <= mememoryValue;
+                    end if;
+                    entry(26) <= '1'; --value valid bit
+                    validBit := '1';
+                    entry(1) <= '1'; -- done bit
+                    doneBit := '1';
+                end if;
+
+            end if;
+ 
+
+
+            --------------------------------------------------------------------
+            --******************************JUMPS-------------------------------
+            --if(checkJMPFamily(OPcode) = '1' and validBit = '1' and doneBit = '1') then--check if any type of jumps except for unconidtional one
+            --        if(OPcode = JZ_OPCODE) then --jump zero
+            --            if(flags(2) = '1') then --if zero flag is one
+            --                jumpZeroTrue := '1';
+            --            end if;
+            --        elsif (OPcode = JN_OPCODE) then --jump negative
+            --            if(flags(1) = '1') then --if zero flag is one
+            --                jumpNegativeTrue := '1';
+            --            end if;
+            --        elsif (OPcode = JC_OPCODE) then --jump carry
+            --            if(flags(0) = '1') then --if zero flag is one
+            --                jumpCarryTrue := '1';
+            --            end if;
+            --        end if;
+            --    end if;
+            --------------------------------------------------------------------
         --OPcode := OpCode(entry => entry);
         end updateTagAluMemory;
     ----------------------------------------------------------------------------
@@ -218,7 +270,7 @@ architecture rtl of ReorderBuffer is
                 
     begin
         entryOpCode := getOpCode(entry=> entry);
-        if (entryOpCode = STD_OPCODE or entryOpCode = JMPN_OPCODE or entryOpCode = JMPZ_OPCODE or entryOpCode = PUSH_OPCODE or entryOpCode = POP_OPcode or entryOpCode = RET_OPCODE or entryOpCode = RTI_OPCODE or entryOpCode = CALL_OPCODE)then
+        if (entryOpCode = STD_OPCODE or entryOpCode = JN_OPCODE or entryOpCode = JZ_OPCODE or entryOpCode = PUSH_OPCODE or entryOpCode = POP_OPcode or entryOpCode = RET_OPCODE or entryOpCode = RTI_OPCODE or entryOpCode = CALL_OPCODE)then
             if(checkStore(opCode => entryOpCode) = '1') then
                 typeOfOpCode := "00";
             elsif(checkStackFamily(opCode => entryOpCode) = '1') then

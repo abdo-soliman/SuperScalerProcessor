@@ -225,6 +225,7 @@ architecture rtl of ReorderBuffer is
         begin
             aluTagInt  := to_integer(unsigned(aluTag));
             memoryTagInt := to_integer(unsigned(memoryTag));
+            OPcode := getOpCode(entry);
 
             if (isTypeZero(OPcode)) then
                 if ((aluTagInt = index and aluTagValid = '1') or 

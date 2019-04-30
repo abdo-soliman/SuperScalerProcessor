@@ -20,7 +20,7 @@ opcode['SUB'] = '01101'
 opcode['AND'] = '01010'
 opcode['OR'] =  '01011'
 opcode['SHR'] = '01111'
-opcode['SHR'] = '01110'
+opcode['SHL'] = '01110'
 # GROUP 3
 opcode['PUSH'] = '10000'
 opcode['POP'] = '10001'

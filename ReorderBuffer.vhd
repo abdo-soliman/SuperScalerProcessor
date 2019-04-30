@@ -205,7 +205,7 @@ architecture rtl of ReorderBuffer is
         end if;
     end isLoopFamily;
     ----------------------------------------------------------------------------
-    procedure updateTagAluMemory(signal    entry:             inout       std_logic_vector(width-1 downto 0);
+    procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(width-1 downto 0);
                                  signal    aluTag:            in          std_logic_vector(3 downto 0) ;
                                  signal    mememoryValue:      in          std_logic_vector(width-1 downto 0);
@@ -231,13 +231,13 @@ architecture rtl of ReorderBuffer is
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
                     if(aluTagInt = index )then
-                        entry(42 downto 27) <= aluValue;
+                        entry(42 downto 27) := aluValue;
                     else
-                        entry(42 downto 27) <= mememoryValue;
+                        entry(42 downto 27) := mememoryValue;
                     end if;
-                    entry(26) <= '1'; --value valid bit
+                    entry(26) := '1'; --value valid bit
                     validBit := '1';
-                    entry(1) <= '1'; -- done bit
+                    entry(1) := '1'; -- done bit
                     doneBit := '1';
                 end if;
             end if;
@@ -248,13 +248,13 @@ architecture rtl of ReorderBuffer is
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
                     if(aluTagInt = index )then
-                        entry(42 downto 27) <= aluValue;
+                        entry(42 downto 27) := aluValue;
                     else
-                        entry(42 downto 27) <= mememoryValue;
+                        entry(42 downto 27) := mememoryValue;
                     end if;
-                    entry(26) <= '1'; --value valid bit
+                    entry(26) := '1'; --value valid bit
                     validBit := '1';
-                    entry(1) <= '1'; -- done bit
+                    entry(1) := '1'; -- done bit
                     doneBit := '1';
                 end if;
 
@@ -281,21 +281,21 @@ architecture rtl of ReorderBuffer is
         --OPcode := OpCode(entry => entry);
         end updateTagAluMemory;
     ----------------------------------------------------------------------------
-    procedure inputParser(signal    entry:          inout       std_logic_vector(width-1 downto 0);
+    procedure inputParser(variable    entry:          inout       std_logic_vector(width-1 downto 0);
                           signal    q:			    inout	    qType;
                           signal readPointer: 		in	        std_logic_vector(3 downto 0);
                           signal writePointer: 		in	        std_logic_vector(3 downto 0);
-                          signal    ROBFullSignal:  in          std_logic )is
+                          signal    ROBEmptySignal:  in          std_logic )is
                     
+    --for looping
     variable l: integer;
     variable r: integer;
     variable temp: integer;
-    variable stackFamily: std_logic;
-    variable jumpConditional: std_logic; 
-    variable entryOpCode: std_logic_vector(4 downto 0); 
-    variable loopOpCode: std_logic_vector(4 downto 0); 
-    variable typeOfOpCode: std_logic_vector(1 downto 0);--"00" if std,"01" if jmp, "10" if stack
-                
+
+    --temp variables
+    variable entryOpCode: std_logic_vector(4 downto 0); --opcode from decoding circuit
+    variable loopOpCode: std_logic_vector(4 downto 0);  --opcode of an element in reorder buffer
+
     begin
         entryOpCode := getOpCode(entry=> entry);
 
@@ -305,21 +305,21 @@ architecture rtl of ReorderBuffer is
 
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
-                temp := to_integer(unsigned'('0' & ROBFullSignal));
                 
-                entry(2) <= '1'; --Assume execute/wait bit is valid
+                entry(2) := '1'; --Assume execute/wait bit is valid
 
-                while( (l /= r) or temp = 1 ) loop
+                while( ROBEmptySignal = '0' ) loop
 
-                    if(temp = 1 and r = l+1) then
-                        temp := 0;
-                    end if;
 
                     loopOpCode := getOpCode(entry => q(r));
 
                     if(isStore(opCode => loopOpCode)) then
-                        entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
-                        entry(2) <= '0'; --Execute/wait bit is not valid
+                        entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                        entry(2) := '0'; --Execute/wait bit is not valid
+                        exit;
+                    end if;
+
+                    if (l = r) then 
                         exit;
                     end if;
 
@@ -335,21 +335,20 @@ architecture rtl of ReorderBuffer is
 
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
-                temp := to_integer(unsigned'('0' & ROBFullSignal));
                 
-                entry(2) <= '1'; --Assume execute/wait bit is valid
+                entry(2) := '1'; --Assume execute/wait bit is valid
 
-                while( (l /= r) or temp = 1 ) loop
-
-                    if(temp = 1 and r = l+1) then
-                        temp := 0;
-                    end if;
+                while( ROBEmptySignal = '0' ) loop
 
                     loopOpCode := getOpCode(entry => q(r));
 
                     if(isStackFamily(opCode => loopOpCode)) then
-                        entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
-                        entry(2) <= '0'; --Execute/wait bit is not valid
+                        entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                        entry(2) := '0'; --Execute/wait bit is not valid
+                        exit;
+                    end if;
+
+                    if (l = r) then 
                         exit;
                     end if;
 
@@ -365,15 +364,10 @@ architecture rtl of ReorderBuffer is
 
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
-                temp := to_integer(unsigned'('0' & ROBFullSignal));
-                
-                entry(2) <= '1'; --Assume execute/wait bit is valid
 
-                while( (l /= r) or temp = 1 ) loop
+                entry(2) := '1'; --Assume execute/wait bit is valid
 
-                    if(temp = 1 and r = l+1) then
-                        temp := 0;
-                    end if;
+                while(ROBEmptySignal = '0') loop
 
                     loopOpCode := getOpCode(entry => q(r) );
 
@@ -381,8 +375,8 @@ architecture rtl of ReorderBuffer is
 
                         if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)) then
 
-                            entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
-                            entry(2) <= '0'; --Execute/wait bit is not valid    
+                            entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                            entry(2) := '0'; --Execute/wait bit is not valid    
                             exit;
 
                         end if;
@@ -391,12 +385,16 @@ architecture rtl of ReorderBuffer is
                         if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)
                             or isLogicalFamily(loopOpCode) ) then
 
-                            entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
-                            entry(2) <= '0'; --Execute/wait bit is not valid    
+                            entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                            entry(2) := '0'; --Execute/wait bit is not valid    
                             exit;
 
                         end if;
 
+                    end if;
+
+                    if (l = r) then 
+                        exit;
                     end if;
 
                     if( r = 0 ) then
@@ -422,64 +420,81 @@ begin
     --				else '0';
     ROBFull <= ROBFullSignal;
 
-    process(clk,reset)
-    variable l: integer;
-    variable r: integer;
-    variable temp: integer := 1;
-    begin
+    ROBEmptySignal <= '1' when (readPointer = writePointer and ROBFullSignal = '0')
+                    else '0';
 
-        l := to_integer(unsigned(readPointer));
-        r := to_integer(unsigned(writePointer));
-        temp := to_integer(unsigned'('0' & ROBFullSignal));
-        report integer'image(l);
-        report integer'image(r);
-
-        while( (l /= r) or temp = 1 ) loop
-            if(temp = 1 and r = l+1) then
-                temp := 0;
-            end if;
-
-            --setDone(q(l)); 
-            report "L=";   
-            report integer'image(l);
-            l := l + 1; 
-            if( l = 16 ) then
-                l := 0;
-            end if;
-        end loop;
-    	if(reset = '1') then
-    		q <= (others => (others => '0'));
-    		readPointer <= (others => '0');
-    		ReadPointerRotated <= '0';
-    		writePointer <= (others => '0');
-    		writePointerRotated <= '0';
-    		ROBFullSignal <= '0';
-    		ROBEmptySignal <= '1';
-
-       	elsif (clk'event and clk = '1') then
-       		--read from decoding circuit
-       		if (ROBFullSignal = '0') then
-       			q(to_integer(unsigned(writePointer))) <= instruction;
-       			writePointer <= writePointer + 1;
-
-       			if (writePointer = length-1) then
-       				writePointerRotated <= not writePointerRotated;
-       			end if;
-
-       			if (writePointer + 1 = readPointer) then
-       				ROBFullSignal <= '1';
-       			else
-       				ROBFullSignal <= '0';
-       			end if;
-
-       		end if;
-
-       --elsif (clk'event and clk = '1') then
-       		--some thing to be done
-
-      	end if;
-    end process;
+    --process(clk,reset)
+    --variable l: integer;
+    --variable r: integer;
     
+    --begin
+
+    --    l := to_integer(unsigned(readPointer));
+    --    r := to_integer(unsigned(writePointer-1));
+       
+    --    while(ROBEmptySignal = '0') loop
+    --        --setDone(q(l)); 
+    --        report "R=";   
+    --        report integer'image(r);
+
+    --        if (l=r) then
+    --            exit;
+    --        end if;
+
+    --        if( r = 0 ) then
+    --            r := 15;
+    --        else
+    --            r := r - 1;
+    --        end if;
+
+           
+
+    --    end loop;
+
+    --	if(reset = '1') then
+    --		q <= (others => (others => '0'));
+    --		readPointer <= (others => '0');
+    --		ReadPointerRotated <= '0';
+    --		writePointer <= (others => '0');
+    --		writePointerRotated <= '0';
+    --		ROBFullSignal <= '0';
+    --		--ROBEmptySignal <= '1';
+
+    --   	elsif (clk'event and clk = '1') then
+    --   		--read from decoding circuit
+    --   		if (ROBFullSignal = '0') then
+    --   			q(to_integer(unsigned(writePointer))) <= instruction;
+    --   			writePointer <= writePointer + 1;
+
+    --   			if (writePointer = length-1) then
+    --   				writePointerRotated <= not writePointerRotated;
+    --   			end if;
+
+    --   			if (writePointer + 1 = readPointer) then
+    --   				ROBFullSignal <= '1';
+    --   			else
+    --   				ROBFullSignal <= '0';
+    --   			end if;
+
+    --   		end if;
+
+    --   --elsif (clk'event and clk = '1') then
+    --   		--some thing to be done
+
+    --  	end if;
+    --end process;
+    
+    process (clk)
+        variable inp:     std_logic_vector(width-1 downto 0);
+    begin
+        inp := instruction;
+        if(clk'event and clk = '1') then
+            inputParser(inp,q,readPointer,writePointer,ROBEmptySignal);
+            q(to_integer(unsigned(writePointer))) <= inp;
+            writePointer <= writePointer + 1;
+        end if;
+
+    end process;
     
 end architecture rtl;
 

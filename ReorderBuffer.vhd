@@ -101,79 +101,109 @@ architecture rtl of ReorderBuffer is
         --    else '0';-- and( OPcode(2) )= '0' and( OPcode(3) )= '0' and ( OPcode(4) )= '0' );
     end setDone;
     ----------------------------------------------------------------------------
-    function checkStackFamily(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isStackFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = PUSH_OPCODE or opCode = POP_OPCODE or opCode = RET_OPCODE or opCode = RTI_OPCODE or opCode = CALL_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkStackFamily;
+    end isStackFamily;
     ----------------------------------------------------------------------------
-    function checkJmpFamily(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isJmpFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = JC_OPCODE or opCode = JN_OPCODE or opCode = JZ_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkJmpFamily;
+    end isJmpFamily;
     ----------------------------------------------------------------------------
-    function checkArithmeticFamily(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isArithmeticFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = ADD_OPCODE or opCode = SUB_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkArithmeticFamily;
+    end isArithmeticFamily;
     ----------------------------------------------------------------------------
-    function checkLoad(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isLogicalFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
+    begin
+        if(opCode = NOT_OPCODE or opCode = AND_OPCODE or opCode = OR_OPCODE) then
+            return true;
+        else
+            return false;
+        end if;
+    end isLogicalFamily;
+    ----------------------------------------------------------------------------
+    function isShiftFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
+    begin
+        if(opCode = SHL_OPCODE or opCode = SHR_OPCODE) then
+            return true;
+        else
+            return false;
+        end if;
+    end isShiftFamily;
+    ----------------------------------------------------------------------------
+    function isLoad(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = LDD_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkLoad;
+    end isLoad;
     ----------------------------------------------------------------------------
-    function checkStore(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isStore(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = STD_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkStore;
+    end isStore;
     ----------------------------------------------------------------------------
-    function checkTypeOne(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isTypeOne(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = MOV_OPCODE or opCode = AND_OPCODE or opCode = OR_OPCODE or 
            opCode = ADD_OPCODE or opCode = SUB_OPCODE or opCode = SHL_OPCODE or
            opCode = SHR_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkTypeOne;
+    end isTypeOne;
     ----------------------------------------------------------------------------
-    function checkTypeZero(opCode:   std_logic_vector(4 downto 0))
-                                return std_logic is
+    function isTypeZero(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
     begin
         if(opCode = NOP_OPCODE or opCode = NOT_OPCODE or opCode = SETC_OPCODE or 
            opCode = CLC_OPCODE or opCode = INC_OPCODE or opCode = DEC_OPCODE or
            opCode = IN_OPCODE  or opCode = OUT_OPCODE) then
-            return '1';
+            return true;
         else
-            return '0';
+            return false;
         end if;
-    end checkTypeZero;
+    end isTypeZero;
+    ----------------------------------------------------------------------------
+    function isLoopFamily(opCode:   std_logic_vector(4 downto 0))
+                                return boolean is
+    begin
+        if(isStackFamily(opCode) or isJMPFamily(opCode) or isLoad(opCode)) then
+            return true;
+        else
+            return false;
+        end if;
+    end isLoopFamily;
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(signal    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(width-1 downto 0);
@@ -196,7 +226,7 @@ architecture rtl of ReorderBuffer is
             aluTagInt  := to_integer(unsigned(aluTag));
             memoryTagInt := to_integer(unsigned(memoryTag));
 
-            if (checkTypeZero(OPcode) = '1') then
+            if (isTypeZero(OPcode)) then
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
@@ -212,7 +242,7 @@ architecture rtl of ReorderBuffer is
                 end if;
             end if;
 
-            if (checkTypeOne(OPcode) = '1') then
+            if (isTypeOne(OPcode)) then
 
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
@@ -229,9 +259,7 @@ architecture rtl of ReorderBuffer is
                 end if;
 
             end if;
- 
-
-
+            
             --------------------------------------------------------------------
             --******************************JUMPS-------------------------------
             --if(checkJMPFamily(OPcode) = '1' and validBit = '1' and doneBit = '1') then--check if any type of jumps except for unconidtional one
@@ -270,76 +298,119 @@ architecture rtl of ReorderBuffer is
                 
     begin
         entryOpCode := getOpCode(entry=> entry);
-        if (entryOpCode = STD_OPCODE or entryOpCode = JN_OPCODE or entryOpCode = JZ_OPCODE or entryOpCode = PUSH_OPCODE or entryOpCode = POP_OPcode or entryOpCode = RET_OPCODE or entryOpCode = RTI_OPCODE or entryOpCode = CALL_OPCODE)then
-            if(checkStore(opCode => entryOpCode) = '1') then
-                typeOfOpCode := "00";
-            elsif(checkStackFamily(opCode => entryOpCode) = '1') then
-                typeOfOpCode := "10";
-            elsif(checkJMPFamily(opCode => entryOpCode) = '1')then
-                typeOfOpCode := "01";
-            end if;
-            if(typeOfOpCode = "00" )then --case store find load
+
+        if (isLoopFamily(entryOpCode)) then
+
+            if(isLoad(entryOpCode)) then --case store find load
+
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
                 temp := to_integer(unsigned'('0' & ROBFullSignal));
                 
+                entry(2) <= '1'; --Assume execute/wait bit is valid
+
                 while( (l /= r) or temp = 1 ) loop
+
                     if(temp = 1 and r = l+1) then
                         temp := 0;
                     end if;
-                    loopOpCode := getOpCode(entry => q(r) );
-                    if(checkLoad(opCode => loopOpCode) = '1') then
+
+                    loopOpCode := getOpCode(entry => q(r));
+
+                    if(isStore(opCode => loopOpCode)) then
                         entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
+                        entry(2) <= '0'; --Execute/wait bit is not valid
                         exit;
                     end if;
+
                     if( r = 0 ) then
                         r := 15;
                     else
                         r := r - 1; 
                     end if;
+
                 end loop;
-            elsif(typeOfOpCode = "10")then -- jmp case
+
+            elsif(isStackFamily(entryOpCode)) then -- jmp case
+
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
                 temp := to_integer(unsigned'('0' & ROBFullSignal));
                 
+                entry(2) <= '1'; --Assume execute/wait bit is valid
+
                 while( (l /= r) or temp = 1 ) loop
+
                     if(temp = 1 and r = l+1) then
                         temp := 0;
                     end if;
-                    loopOpCode := getOpCode(entry => q(r) );
-                    if(checkJmpFamily(opCode => loopOpCode) = '1') then
+
+                    loopOpCode := getOpCode(entry => q(r));
+
+                    if(isStackFamily(opCode => loopOpCode)) then
                         entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
+                        entry(2) <= '0'; --Execute/wait bit is not valid
                         exit;
                     end if;
+
                     if( r = 0 ) then
                         r := 15;
                     else
                         r := r - 1;
                     end if;
+
                 end loop;
-            elsif(typeOfOpCode = "01") then --case stack
+
+            elsif(isJMPFamily(entryOpCode)) then --case jump
+
                 l := to_integer(unsigned(readPointer));
                 r := to_integer(unsigned(writePointer));
                 temp := to_integer(unsigned'('0' & ROBFullSignal));
                 
+                entry(2) <= '1'; --Assume execute/wait bit is valid
+
                 while( (l /= r) or temp = 1 ) loop
+
                     if(temp = 1 and r = l+1) then
                         temp := 0;
                     end if;
+
                     loopOpCode := getOpCode(entry => q(r) );
-                    if(checkArithmeticFamily(opCode => loopOpCode) = '1') then
-                        entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
-                        exit;
+
+                    if (entryOpCode = JC_OPCODE) then 
+
+                        if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)) then
+
+                            entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
+                            entry(2) <= '0'; --Execute/wait bit is not valid    
+                            exit;
+
+                        end if;
+
+                    else 
+                        if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)
+                            or isLogicalFamily(loopOpCode) ) then
+
+                            entry(6 downto 3) <= std_logic_vector(to_unsigned(r , 4));
+                            entry(2) <= '0'; --Execute/wait bit is not valid    
+                            exit;
+
+                        end if;
+
                     end if;
+
                     if( r = 0 ) then
                         r := 15;
                     else
                         r := r - 1;
                     end if;
+
                 end loop;
+
             end if;
-        end if;                
+
+        end if;          
+
     end inputParser;
 
 

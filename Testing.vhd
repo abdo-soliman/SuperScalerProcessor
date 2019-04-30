@@ -21,11 +21,19 @@ architecture rtl of Testing is
                 entry(0) <= '0';
     end inputParser2;
 
+    function checker return boolean is
+    begin
+        return true;
+    end checker;
+
 begin
 	process(clk)
 	begin
 		if (clk'event and clk = '0') then
-			inputParser2(q);
+			if (checker) then
+
+				report("Hello ma lady");
+			end if;
 			
 		end if;
 	end process;

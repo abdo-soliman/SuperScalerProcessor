@@ -8,7 +8,7 @@ use work.constants.all;
 
 entity ReorderBuffer is
     generic ( length: integer := 16;
-    		 width: integer  := 48 
+    		 width: integer  := 49 
     		 );
     port (
         instruction:	in      	std_logic_vector(width-1 downto 0) := (others => '0');
@@ -40,6 +40,12 @@ architecture rtl of ReorderBuffer is
     signal ROBEmptySignal: 			std_logic := '1';
     signal opCodeSignal:            std_logic_vector(4 downto 0);
     -----------------------------Helper Functions-------------------------------
+    function Busy(entry : std_logic_vector(width-1 downto 0) := (others => '0'))   
+                        return  std_logic is
+    begin
+        return entry(48);
+    end Busy;
+    ----------------------------------------------------------------------------
     function getOpCode(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
     					return  std_logic_vector is
     begin
@@ -88,6 +94,12 @@ architecture rtl of ReorderBuffer is
         return entry(1);
     end Done;
     ----------------------------------------------------------------------------
+    function DestinationAddressValid(entry : std_logic_vector(width-1 downto 0) := (others => '0'))  
+                        return  std_logic is
+    begin
+        return entry(0);
+    end DestinationAddressValid;
+
     function isZeroSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
                         return  boolean is
     begin
@@ -246,7 +258,7 @@ architecture rtl of ReorderBuffer is
                                  signal    aluTagValid:       in          std_logic;
                                  variable  index:             in          integer;
                                  signal    memoryTagValid:    in          std_logic;
-                                 signal    flags:             in          std_logic_vector(3 downto 0);
+                                 signal    flags:             in          std_logic_vector(2 downto 0);
                                  variable jumpZeroTrue:      out         std_logic;
                                  variable jumpNegativeTrue:  out         std_logic;
                                  variable jumpCarryTrue:     out         std_logic) is
@@ -255,12 +267,16 @@ architecture rtl of ReorderBuffer is
         variable validBit:  std_logic;
         variable aluTagInt: integer;
         variable memoryTagInt: integer;
+
+        --for store case, I'm sad :(
+        variable firstTag: std_logic_vector(3 downto 0);
+        variable secondTag: std_logic_vector(3 downto 0);
         begin
             aluTagInt  := to_integer(unsigned(aluTag));
             memoryTagInt := to_integer(unsigned(memoryTag));
             OPcode := getOpCode(entry);
 
-            if (isTypeZero(OPcode)) then
+            if (isTypeZero(OPcode) or isTypeOne(OPcode) or OPcode = LDD_OPCODE or OPcode = LDM_OPCODE) then
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
@@ -274,24 +290,6 @@ architecture rtl of ReorderBuffer is
                     entry(1) := '1'; -- done bit
                     doneBit := '1';
                 end if;
-            end if;
-
-            if (isTypeOne(OPcode)) then
-
-                if ((aluTagInt = index and aluTagValid = '1') or 
-                    (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
-
-                    if(aluTagInt = index )then
-                        entry(42 downto 27) := aluValue;
-                    else
-                        entry(42 downto 27) := mememoryValue;
-                    end if;
-                    entry(26) := '1'; --value valid bit
-                    validBit := '1';
-                    entry(1) := '1'; -- done bit
-                    doneBit := '1';
-                end if;
-
             end if;
             
             if (isJmpFamily(OPcode)) then
@@ -306,9 +304,63 @@ architecture rtl of ReorderBuffer is
                         entry(1) := '1';
 
                     end if;
-                    
+
                 end if;
 
+            end if;
+
+            if (isStackFamily(OPcode)) then
+
+                if (OPcode = PUSH_OPCODE or OPcode = CALL_OPCODE) then 
+
+                    if ((aluTagInt = index and aluTagValid = '1') or 
+                    (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
+
+                        if(aluTagInt = index )then
+                            entry(42 downto 27) := aluValue;
+                        else
+                            entry(42 downto 27) := mememoryValue;
+                        end if;
+
+                        entry(26) := '1'; --value valid bit
+                        validBit := '1';
+
+                    end if;
+
+                end if;
+
+            end if;
+
+            if (OPcode = STD_OPCODE) then 
+                
+                if (aluTagValid = '1' or memoryTagValid = '1') then 
+
+                    firstTag := Value(entry)(3 downto 0);
+                    secondTag := DestinationAddress(entry)(3 downto 0);
+
+                    if (ValueValid(entry) = '0') then 
+                        if(aluTagValid = '1' and aluTag = firstTag) then
+                            entry(42 downto 27) := aluValue;
+                            entry(26) := '1';
+                        elsif (memoryTagValid = '1' and memoryTag = firstTag) then
+                            entry(42 downto 27) := mememoryValue;
+                            entry(26) := '1';
+                        end if;
+                    end if;
+
+                    if (DestinationAddressValid(entry) = '0') then 
+                        if(aluTagValid = '1' and aluTag = secondTag) then
+                            entry(25 downto 10) := aluValue;
+                            entry(0) := '1';
+                        elsif (memoryTagValid = '1' and memoryTag = secondTag) then
+                            entry(25 downto 10) := mememoryValue;
+                            entry(0) := '1';
+                        end if;
+                    end if;
+
+
+                end if;
+               
 
             end if;
             --------------------------------------------------------------------

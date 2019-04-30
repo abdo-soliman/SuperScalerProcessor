@@ -88,6 +88,39 @@ architecture rtl of ReorderBuffer is
         return entry(1);
     end Done;
     ----------------------------------------------------------------------------
+    function isZeroSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
+                        return  boolean is
+    begin
+        if (flags(0) = '1') then
+            return true;
+        else
+            return false;
+        end if;
+
+    end isZeroSet;
+        ----------------------------------------------------------------------------
+    function isNegativeSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
+                        return  boolean is
+    begin
+        if (flags(1) = '1') then
+            return true;
+        else
+            return false;
+        end if;
+        
+    end isNegativeSet;
+        ----------------------------------------------------------------------------
+    function isCarrySet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
+                        return  boolean is
+    begin
+        if (flags(2) = '1') then
+            return true;
+        else
+            return false;
+        end if;
+        
+    end isCarrySet;
+    ----------------------------------------------------------------------------
     procedure setDone(signal entry:    inout   std_logic_vector(width-1 downto 0);
                    signal OPcode:   in      std_logic_vector(4 downto 0);
                    signal valueValid:   inout  std_logic) is
@@ -261,6 +294,23 @@ architecture rtl of ReorderBuffer is
 
             end if;
             
+            if (isJmpFamily(OPcode)) then
+
+                if(aluTagInt = index and aluTagValid = '1') then
+
+                    if(OPcode = JC_OPCODE and isCarrySet(flags)) then 
+                        entry(1) := '1';
+                    elsif (OPcode = JZ_OPCODE and isZeroSet(flags)) then
+                        entry(1) := '1';
+                    elsif (OPcode = JN_OPCODE and isNegativeSet(flags)) then
+                        entry(1) := '1';
+
+                    end if;
+                    
+                end if;
+
+
+            end if;
             --------------------------------------------------------------------
             --******************************JUMPS-------------------------------
             --if(checkJMPFamily(OPcode) = '1' and validBit = '1' and doneBit = '1') then--check if any type of jumps except for unconidtional one

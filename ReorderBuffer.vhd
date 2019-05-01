@@ -150,7 +150,7 @@ architecture rtl of ReorderBuffer is
 
             end if;
 
-            if (OPcode = CALL_OPCODE or Opcode = LDD_OPCODE) then 
+            if (OPcode = CALL_OPCODE) then 
 
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 

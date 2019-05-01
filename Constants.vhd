@@ -3,9 +3,11 @@ USE IEEE.std_logic_1164.all;
 package constants is    
 
 --------------- PC Controller CONSTANTS ----------------------
-constant PCCONTROLLER_NOP:    std_logic_vector(1 downto 0)			:= "00";
-constant PCCONTROLLER_NORMAL:    std_logic_vector(1 downto 0)		:= "01";
-constant PCCONTROLLER_ROB:    std_logic_vector(1 downto 0)			:= "10";
+constant PCCONTROLLER_NOP:      std_logic_vector(1 downto 0)  := "00";
+constant PCCONTROLLER_NORMAL:   std_logic_vector(1 downto 0)  := "01";
+constant PCCONTROLLER_ROB:      std_logic_vector(1 downto 0)  := "10";
+constant SP_START:              std_logic_vector(15 downto 0) := (others => '1');
+constant PORT_NUMBER:           std_logic_vector(2 downto 0) := "111";
 
 --------------- OPCODES ----------------------
 constant NOP_OPCODE:    std_logic_vector(4 downto 0) := "00000";

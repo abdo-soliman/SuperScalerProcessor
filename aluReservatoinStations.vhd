@@ -152,15 +152,6 @@ architecture mixed of aluReservationStations is
                 end loop;
             end if;
 
-            -- if (clk'event and clk = '1') then
-            --     for i in 0 to 11 loop
-            --         outEnables(i) <= '0';
-            --         if (outEnables(i) = '1') then
-            --             outEnables(i) <= '0';
-            --         end if;
-            --     end loop;
-            -- end if;
-
             found1 := 0;
             found2 := 0;
         end process;

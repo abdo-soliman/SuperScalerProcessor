@@ -2,6 +2,13 @@ library IEEE;
 USE IEEE.std_logic_1164.all;
 package constants is    
 
+--------------- PC Controller CONSTANTS ----------------------
+constant PCCONTROLLER_NOP:      std_logic_vector(1 downto 0)  := "00";
+constant PCCONTROLLER_NORMAL:   std_logic_vector(1 downto 0)  := "01";
+constant PCCONTROLLER_ROB:      std_logic_vector(1 downto 0)  := "10";
+constant SP_START:              std_logic_vector(15 downto 0) := (others => '1');
+constant PORT_NUMBER:           std_logic_vector(2 downto 0) := "111";
+
 --------------- OPCODES ----------------------
 constant NOP_OPCODE:    std_logic_vector(4 downto 0) := "00000";
 constant SETC_OPCODE:   std_logic_vector(4 downto 0) := "00010";
@@ -30,7 +37,6 @@ constant JZ_OPCODE:     std_logic_vector(4 downto 0) := "11100";
 constant JN_OPCODE:     std_logic_vector(4 downto 0) := "11101";
 constant JC_OPCODE:     std_logic_vector(4 downto 0) := "11110";
 constant JMP_OPCODE:    std_logic_vector(4 downto 0) := "11111";
---------------------------------------------------------------------------------
 
 ------------------------ALU Opcodes---------------------------------------------
 constant MOV_ALU_CODE: std_logic_vector(4 downto 0) := "00000";
@@ -308,4 +314,3 @@ begin
 end isLoopFamily;
 
 end package body constants;
-

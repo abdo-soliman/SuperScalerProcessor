@@ -150,7 +150,7 @@ architecture rtl of ReorderBuffer is
 
             end if;
 
-            if (OPcode = CALL_OPCODE) then 
+            if (OPcode = CALL_OPCODE or Opcode = LDD_OPCODE) then 
 
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
@@ -418,7 +418,6 @@ architecture rtl of ReorderBuffer is
             if (DestinationAddressValid(entry) = '1') then
                 commited := true;
                 if (Execute(entry) = '1') then --branch taken
-                    report ("Hello my friend");
                     outputValue <= DestinationAddress(entry);
                     pcWriteEnable := '1';
                 end if;

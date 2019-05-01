@@ -35,3 +35,34 @@ Trace back: list element in braces followed by "text" instead of space
     (command bound to event)
   <2:/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/tk8.6/bgerror.tcl:106: ::tkerror {list element in braces followed by "text" instead of space}
   <1:eval:1: ::tk::dialog::error::bgerror {list element in braces followed by "text" instead of space}
+Wed May 01 21:19:51 EET 2019
+Trace back: Dataset not found: sim
+    while executing
+"DatasetInfo $option $ds"
+    (procedure "::dataset::_info" line 6)
+    invoked from within
+"dataset info name $namespace"
+    (procedure "namespaceOf" line 9)
+    invoked from within
+"namespaceOf $path"
+    (procedure "environment" line 96)
+    invoked from within
+"environment sim:"
+    ("eval" body line 1)
+    invoked from within
+"eval [concat environment $args]"
+    (procedure "env" line 3)
+    invoked from within
+"env $ns"
+    (object "::.main_pane.files.interior.cs.body.filepane" method "::Filelist::UpdateFromSelection" body line 19)
+    invoked from within
+"UpdateFromSelection"
+    (object "::.main_pane.files.interior.cs.body.filepane" method "::Filelist::_buttonRelease1" body line 3)
+    invoked from within
+"::.main_pane.files.interior.cs.body.filepane _buttonRelease1 .main_pane.files.interior.cs.body.filepane.lwchildsite.clipper.canvas.sfchildsite.list 0 ..."
+    (in namespace inscope "::vsimwidgets::Hierarchy" script line 1)
+    invoked from within
+"namespace inscope ::vsimwidgets::Hierarchy {::.main_pane.files.interior.cs.body.filepane _buttonRelease1 .main_pane.files.interior.cs.body.filepane.lw..."
+    (command bound to event)
+  <2:/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/tk8.6/bgerror.tcl:106: ::tkerror {Dataset not found: sim}
+  <1:eval:1: ::tk::dialog::error::bgerror {Dataset not found: sim}

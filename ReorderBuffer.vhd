@@ -2,6 +2,7 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 use IEEE.numeric_std.all;
+library work;
 use work.constants.all;
 
 --length n and width m
@@ -18,13 +19,24 @@ entity ReorderBuffer is
         memoryTag:     in          std_logic_vector(3 downto 0) := (others => '0');
         aluTagValid:    in          std_logic := '0';
         memoryTagValid: in          std_logic := '0';
-        flags:          in          std_logic_vector(2 downto 0); 
+        flags:          in          std_logic_vector(2 downto 0) := (others => '0'); 
         --memory and alu tags from the CBD
        	---------------------------------------------------------------------
         reset:			in      	std_logic := '0';
         clk:			in      	std_logic := '0';
         ROBFull:		out 		std_logic := '0';
-        ROBEmpty:		out 		std_logic := '0';
+        --ROBEmpty:		out 		std_logic := '0';
+        pcWriteOut:        out         std_logic := '0';
+        pcValueOut:        out         std_logic_vector(15 downto 0) := (others => '0');
+        destRegisterOut:    out     std_logic_vector(2 downto 0);
+        registerWriteEnableOut:    out         std_logic := '0';
+        outputValueOut:            out     std_logic_vector(15 downto 0);
+        addressOut:                out     std_logic_vector(15 downto 0);
+        memoryWriteEnableOut:   out        std_logic := '0';
+        portWriteEnableOut:     out        std_logic := '0';
+        pcWriteEnableOut:       out        std_logic := '0';
+        isPushOut:              out        std_logic := '0';
+        isPopOut:               out        std_logic := '0';
         output: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
     );
 end entity ReorderBuffer;
@@ -39,216 +51,18 @@ architecture rtl of ReorderBuffer is
     signal ROBFullSignal: 			std_logic := '0';
     signal ROBEmptySignal: 			std_logic := '1';
     signal opCodeSignal:            std_logic_vector(4 downto 0);
-    -----------------------------Helper Functions-------------------------------
-    function Busy(entry : std_logic_vector(width-1 downto 0) := (others => '0'))   
-                        return  std_logic is
-    begin
-        return entry(48);
-    end Busy;
-    ----------------------------------------------------------------------------
-    function getOpCode(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic_vector is
-    begin
-        return entry(47 downto 43);
-    end getOpCode;
-    ----------------------------------------------------------------------------
-    function Value(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic_vector is
-    begin
-        return entry(42 downto 27);
-    end Value;
-    ----------------------------------------------------------------------------
-    function ValueValid(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic is
-    begin
-        return entry(26);
-    end ValueValid;
-    ----------------------------------------------------------------------------
-    function DestinationAddress(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic_vector is
-    begin
-        return entry(25 downto 10);
-    end DestinationAddress;
-    ----------------------------------------------------------------------------
-    function DestinationRegister(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic_vector is
-    begin
-        return entry(9 downto 7);
-    end DestinationRegister;
-    ----------------------------------------------------------------------------
-    function WaitingTag(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic_vector is
-    begin
-        return entry(6 downto 3);
-    end WaitingTag;
-    ----------------------------------------------------------------------------
-    function Execute(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic is
-    begin
-        return entry(2);
-    end Execute;
-    ----------------------------------------------------------------------------
-    function Done(entry : std_logic_vector(width-1 downto 0) := (others => '0')) 	
-    					return  std_logic is
-    begin
-        return entry(1);
-    end Done;
-    ----------------------------------------------------------------------------
-    function DestinationAddressValid(entry : std_logic_vector(width-1 downto 0) := (others => '0'))  
-                        return  std_logic is
-    begin
-        return entry(0);
-    end DestinationAddressValid;
 
-    function isZeroSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
-                        return  boolean is
-    begin
-        if (flags(0) = '1') then
-            return true;
-        else
-            return false;
-        end if;
+    signal destinationRegisterSignal:    std_logic_vector(2 downto 0);
+    signal registerWriteEnableSignal:    std_logic := '0';
+    signal outputValueSignal:            std_logic_vector(15 downto 0);
+    signal addressSignal:                std_logic_vector(15 downto 0);
+    signal memoryWriteEnableSignal:      std_logic := '0';
+    signal portWriteEnableSignal:        std_logic := '0';
+    signal pcWriteEnableSignal:          std_logic := '0';
+    signal pcValueSignal:                std_logic_vector(15 downto 0);
+    signal isPushSignal:                 std_logic := '0';
+    signal isPopSignal:                  std_logic := '0';
 
-    end isZeroSet;
-        ----------------------------------------------------------------------------
-    function isNegativeSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
-                        return  boolean is
-    begin
-        if (flags(1) = '1') then
-            return true;
-        else
-            return false;
-        end if;
-        
-    end isNegativeSet;
-        ----------------------------------------------------------------------------
-    function isCarrySet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
-                        return  boolean is
-    begin
-        if (flags(2) = '1') then
-            return true;
-        else
-            return false;
-        end if;
-        
-    end isCarrySet;
-    ----------------------------------------------------------------------------
-    procedure setDone(signal entry:    inout   std_logic_vector(width-1 downto 0);
-                   signal OPcode:   in      std_logic_vector(4 downto 0);
-                   signal valueValid:   inout  std_logic) is
-    begin
-        if(OPcode(0) = '1' and OPcode(1)= '1' and OPcode(2)= '1' and OPcode(3)= '1' and OPcode(4)= '1')then
-            entry(1) <= '1'; --case NOP done bit is always one
-        elsif( (OPcode(4) = '0' and OPcode(3) = '1') or ( OPcode(4) = '0' and OPcode(3) = '0' and OPcode(2) = '0' and OPcode(1) = '1' ) or ( ( OPcode(4) = '1' and OPcode(3) = '0') and(( OPcode(2) = '1' and OPcode(1) = '1'  and  OPcode(0) = '1') or ( OPcode(2) = '0' and OPcode(1) = '1'  and  OPcode(0) = '1') or ( OPcode(2) = '0' and OPcode(1) = '0'  and  OPcode(0) = '1')) ))then
-            entry(1) <= valueValid; --case when the op goes to the alu and outputs a value so we check the valid value bit
-        end if;
-        --entry(0) <= '1' when OPcode(0) = '1'
-        --    else '0';-- and( OPcode(2) )= '0' and( OPcode(3) )= '0' and ( OPcode(4) )= '0' );
-    end setDone;
-    ----------------------------------------------------------------------------
-    function isStackFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = PUSH_OPCODE or opCode = POP_OPCODE or opCode = RET_OPCODE or opCode = RTI_OPCODE or opCode = CALL_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isStackFamily;
-    ----------------------------------------------------------------------------
-    function isJmpFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = JC_OPCODE or opCode = JN_OPCODE or opCode = JZ_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isJmpFamily;
-    ----------------------------------------------------------------------------
-    function isArithmeticFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = ADD_OPCODE or opCode = SUB_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isArithmeticFamily;
-    ----------------------------------------------------------------------------
-    function isLogicalFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = NOT_OPCODE or opCode = AND_OPCODE or opCode = OR_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isLogicalFamily;
-    ----------------------------------------------------------------------------
-    function isShiftFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = SHL_OPCODE or opCode = SHR_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isShiftFamily;
-    ----------------------------------------------------------------------------
-    function isLoad(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = LDD_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isLoad;
-    ----------------------------------------------------------------------------
-    function isStore(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = STD_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isStore;
-    ----------------------------------------------------------------------------
-    function isTypeOne(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = MOV_OPCODE or opCode = AND_OPCODE or opCode = OR_OPCODE or 
-           opCode = ADD_OPCODE or opCode = SUB_OPCODE or opCode = SHL_OPCODE or
-           opCode = SHR_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isTypeOne;
-    ----------------------------------------------------------------------------
-    function isTypeZero(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(opCode = NOP_OPCODE or opCode = NOT_OPCODE or opCode = SETC_OPCODE or 
-           opCode = CLC_OPCODE or opCode = INC_OPCODE or opCode = DEC_OPCODE or
-           opCode = IN_OPCODE  or opCode = OUT_OPCODE) then
-            return true;
-        else
-            return false;
-        end if;
-    end isTypeZero;
-    ----------------------------------------------------------------------------
-    function isLoopFamily(opCode:   std_logic_vector(4 downto 0))
-                                return boolean is
-    begin
-        if(isStackFamily(opCode) or isJMPFamily(opCode) or isLoad(opCode)) then
-            return true;
-        else
-            return false;
-        end if;
-    end isLoopFamily;
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(width-1 downto 0);
@@ -281,7 +95,7 @@ architecture rtl of ReorderBuffer is
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
                     if(aluTagInt = index )then
-                        entry(42 downto 27) := aluValue;
+                        entry(42 downto 27) := aluValue; --value
                     else
                         entry(42 downto 27) := mememoryValue;
                     end if;
@@ -294,14 +108,17 @@ architecture rtl of ReorderBuffer is
             
             if (isJmpFamily(OPcode)) then
 
-                if(aluTagInt = index and aluTagValid = '1') then
+                if(aluTagInt = WaitingTag(entry) and aluTagValid = '1') then
 
+                    --Decision of jump
+                    --If 1, jmp is taken, 
+                    --else untaken
                     if(OPcode = JC_OPCODE and isCarrySet(flags)) then 
-                        entry(1) := '1';
+                        entry(2) := '1'; --Execute/Wait 
                     elsif (OPcode = JZ_OPCODE and isZeroSet(flags)) then
-                        entry(1) := '1';
+                        entry(2) := '1';
                     elsif (OPcode = JN_OPCODE and isNegativeSet(flags)) then
-                        entry(1) := '1';
+                        entry(2) := '1';
 
                     end if;
 
@@ -309,22 +126,64 @@ architecture rtl of ReorderBuffer is
 
             end if;
 
-            if (isStackFamily(OPcode)) then
+            -- note that isJmpFamily doesn't include unconditional jmp
+            -- so I added it explicitly
+            if (isJmpFamily(OPcode) or OPcode = JMP_OPCODE) then
 
-                if (OPcode = PUSH_OPCODE or OPcode = CALL_OPCODE) then 
+                if (aluTagValid = '1' or memoryTagValid = '1') then 
 
-                    if ((aluTagInt = index and aluTagValid = '1') or 
-                    (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
+                    firstTag := DestinationAddress(entry)(3 downto 0);
 
-                        if(aluTagInt = index )then
-                            entry(42 downto 27) := aluValue;
-                        else
-                            entry(42 downto 27) := mememoryValue;
+                    if (DestinationAddressValid(entry) = '0') then 
+
+                        if(aluTagValid = '1' and aluTag = firstTag) then
+                            entry(25 downto 10) := aluValue; --Destination address
+                            entry(0) := '1'; ----Destination address valid
+                        elsif (memoryTagValid = '1' and memoryTag = firstTag) then
+                            entry(25 downto 10) := mememoryValue;
+                            entry(0) := '1';
                         end if;
 
-                        entry(26) := '1'; --value valid bit
-                        validBit := '1';
+                    end if;
 
+                end if;
+
+            end if;
+
+            if (OPcode = CALL_OPCODE) then 
+
+                if (aluTagValid = '1' or memoryTagValid = '1') then 
+
+                    firstTag := DestinationAddress(entry)(3 downto 0);
+
+                    if (DestinationAddressValid(entry) = '0') then 
+                        if(aluTagValid = '1' and aluTag = firstTag) then
+                            entry(25 downto 10) := aluValue; --Destination address
+                            entry(0) := '1'; --Destination address valid
+                        elsif (memoryTagValid = '1' and memoryTag = firstTag) then
+                            entry(25 downto 10) := mememoryValue;
+                            entry(0) := '1';
+                        end if;
+                    end if;
+
+                end if;
+
+            end if;
+
+            if (OPcode = PUSH_OPCODE) then 
+
+                if (aluTagValid = '1' or memoryTagValid = '1') then 
+
+                    firstTag := Value(entry)(3 downto 0);
+
+                    if (ValueValid(entry) = '0') then 
+                        if(aluTagValid = '1' and aluTag = firstTag) then
+                            entry(42 downto 27) := aluValue; --value
+                            entry(26) := '1'; --value valid
+                        elsif (memoryTagValid = '1' and memoryTag = firstTag) then
+                            entry(42 downto 27) := mememoryValue;
+                            entry(26) := '1';
+                        end if;
                     end if;
 
                 end if;
@@ -340,8 +199,8 @@ architecture rtl of ReorderBuffer is
 
                     if (ValueValid(entry) = '0') then 
                         if(aluTagValid = '1' and aluTag = firstTag) then
-                            entry(42 downto 27) := aluValue;
-                            entry(26) := '1';
+                            entry(42 downto 27) := aluValue; --value
+                            entry(26) := '1'; --value valid
                         elsif (memoryTagValid = '1' and memoryTag = firstTag) then
                             entry(42 downto 27) := mememoryValue;
                             entry(26) := '1';
@@ -350,8 +209,8 @@ architecture rtl of ReorderBuffer is
 
                     if (DestinationAddressValid(entry) = '0') then 
                         if(aluTagValid = '1' and aluTag = secondTag) then
-                            entry(25 downto 10) := aluValue;
-                            entry(0) := '1';
+                            entry(25 downto 10) := aluValue; --Destination address
+                            entry(0) := '1'; --Destination address valid
                         elsif (memoryTagValid = '1' and memoryTag = secondTag) then
                             entry(25 downto 10) := mememoryValue;
                             entry(0) := '1';
@@ -476,7 +335,8 @@ architecture rtl of ReorderBuffer is
 
                     if (entryOpCode = JC_OPCODE) then 
 
-                        if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)) then
+                        if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode) or
+                            loopOpCode = SETC_OPCODE or loopOpCode = CLC_OPCODE) then
 
                             entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
                             entry(2) := '0'; --Execute/wait bit is not valid    
@@ -514,7 +374,75 @@ architecture rtl of ReorderBuffer is
 
     end inputParser;
 
+    procedure commitInstruction(variable    entry:                  inout   std_logic_vector(width-1 downto 0);
+                                signal      destRegister:    out     std_logic_vector(2 downto 0);
+                                variable    registerWriteEnable:    out     std_logic;
+                                signal      outputValue:            out     std_logic_vector(15 downto 0);
+                                signal      address:                out     std_logic_vector(15 downto 0);
+                                variable    memoryWriteEnable:      out     std_logic;
+                                variable    portWriteEnable:        out     std_logic;
+                                variable    pcWriteEnable:          out     std_logic;
+                                variable    isPush:                 out     std_logic;
+                                variable    isPop:                  out     std_logic;
+                                variable    commited:               out     boolean) is
+    
+    variable entryOpCode: std_logic_vector(4 downto 0);
 
+    begin
+        entryOpCode := getOpCode(entry);
+
+        registerWriteEnable := '0';
+        memoryWriteEnable := '0';
+        portWriteEnable := '0';
+        pcWriteEnable := '0';
+        isPush := '0';
+        isPop := '0';
+        commited := false;
+
+        if (isStackFamily(entryOpCode) or isLoad(entryOpCode) or entryOpCode = STD_OPCODE) then
+            --Memory instructions
+
+            if (entryOpCode = POP_OPCODE) then
+                if (ValueValid(entry) = '1') then 
+                    commited := true;
+                    destRegister <= DestinationRegister(entry);
+                    registerWriteEnable := '1';
+                    isPop := '1';
+                end if;
+
+            --elsif () then
+
+            end if;
+
+        elsif (isJmpFamily(entryOpCode) or entryOpCode = JMP_OPCODE) then --jumps
+            if (DestinationAddressValid(entry) = '1') then
+                commited := true;
+                if (Execute(entry) = '1') then --branch taken
+                    report ("Hello my friend");
+                    outputValue <= DestinationAddress(entry);
+                    pcWriteEnable := '1';
+                end if;
+            end if;
+
+        elsif (entryOpCode = NOP_OPCODE) then --no commit
+            commited := true; 
+
+        elsif (entryOpCode = OUT_OPCODE) then
+            if(ValueValid(entry) = '1') then 
+                commited := true;
+                outputValue <= Value(entry);
+                portWriteEnable := '1';
+            end if;
+
+        else 
+            if(ValueValid(entry) = '1') then 
+                commited := true;
+                outputValue <= Value(entry);
+                registerWriteEnable := '1';
+                destRegister <= DestinationRegister(entry);
+            end if;
+        end if;
+    end commitInstruction;
 
 begin
     output <= q(to_integer(unsigned(readPointer)));
@@ -525,6 +453,15 @@ begin
 
     ROBEmptySignal <= '1' when (readPointer = writePointer and ROBFullSignal = '0')
                     else '0';
+
+    outputValueOut <= outputValueSignal;
+    registerWriteEnableOut <= registerWriteEnableSignal;
+    memoryWriteEnableOut <= memoryWriteEnableSignal;
+    portWriteEnableOut <= portWriteEnableSignal;
+    pcWriteOut <= pcWriteEnableSignal;
+    pcValueOut <= outputValueSignal;
+    isPushOut <= isPushSignal;
+    isPopOut <= isPopSignal;
 
     --process(clk,reset)
     --variable l: integer;
@@ -587,16 +524,81 @@ begin
     --  	end if;
     --end process;
     
-    process (clk)
-        variable inp:     std_logic_vector(width-1 downto 0);
+    process (clk,reset)
+        variable    destinationRegisterV:         std_logic_vector(2 downto 0);
+        variable    registerWriteEnableV:         std_logic;
+        variable    outputValueV:                 std_logic_vector(15 downto 0);
+        variable    address:                      std_logic_vector(15 downto 0);
+        variable    memoryWriteEnableV:           std_logic;
+        variable    portWriteEnableV:             std_logic;
+        variable    pcWriteEnableV:               std_logic;
+        variable    isPushV:                      std_logic;
+        variable    isPopV:                       std_logic;
+        variable    commitedV:                    boolean;
+        variable    inp:                          std_logic_vector(width-1 downto 0);
     begin
-        inp := instruction;
-        if(clk'event and clk = '1') then
-            inputParser(inp,q,readPointer,writePointer,ROBEmptySignal);
-            q(to_integer(unsigned(writePointer))) <= inp;
-            writePointer <= writePointer + 1;
-        end if;
+        inp := q(to_integer(unsigned(readPointer)));
+        if (reset = '1') then 
+            q <= (others => (others => '0'));
+            readPointer <= (others => '0');
+            ReadPointerRotated <= '0';
+            writePointer <= (others => '0');
+            writePointerRotated <= '0';
+            ROBFullSignal <= '0';
+            --ROBEmptySignal <= '1';
 
+        elsif(clk'event and clk = '1') then
+            --inputParser(inp,q,readPointer,writePointer,ROBEmptySignal);
+            --q(to_integer(unsigned(writePointer))) <= inp;
+            --writePointer <= writePointer + 1;
+            --if (pcWriteEnableSignal = '1') then
+            --    pcWriteEnableSignal <= '0';
+            --end if;
+            null;
+
+        elsif (clk'event and clk = '0') then
+            if(ROBEmptySignal /= '1')then
+                report "Plz";
+                commitInstruction(
+                    inp,
+                    destRegisterOut,
+                    registerWriteEnableV,
+                    outputValueSignal,
+                    addressOut,
+                    memoryWriteEnableV,
+                    portWriteEnableV,
+                    pcWriteEnableV,
+                    isPushV,
+                    isPopV,
+                    commitedV
+                    );
+                
+                registerWriteEnableSignal <= registerWriteEnableV;
+                memoryWriteEnableSignal <= memoryWriteEnableV;
+                portWriteEnableSignal <= portWriteEnableV;
+                pcWriteEnableSignal <= pcWriteEnableV;
+                isPushSignal <= isPushV;
+                isPopSignal <= isPopV;
+                if (commitedV) then 
+                    readPointer <= readPointer + 1;
+                    --Todo rotate
+
+                end if;
+                if(pcWriteEnableV = '1') then 
+                    report "God Please Help me";
+                    q <= (others => (others => '0'));
+                    readPointer <= (others => '0');
+                    ReadPointerRotated <= '0';
+                    writePointer <= (others => '0');
+                    writePointerRotated <= '0';
+                    ROBFullSignal <= '0';
+                    --pcValueSignal <= outputValueSignal;
+                    --ROBEmptySignal <= '1';
+                end if;
+            end if;
+            
+
+        end if;
     end process;
     
 end architecture rtl;

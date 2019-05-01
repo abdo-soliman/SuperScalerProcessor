@@ -126,6 +126,8 @@ architecture rtl of ReorderBuffer is
 
             end if;
 
+            -----------------------Dependency resolver---------------------
+
             -- note that isJmpFamily doesn't include unconditional jmp
             -- so I added it explicitly
             if (isJmpFamily(OPcode) or OPcode = JMP_OPCODE) then
@@ -410,7 +412,28 @@ architecture rtl of ReorderBuffer is
                     isPop := '1';
                 end if;
 
-            --elsif () then
+            elsif (entryOpCode = PUSH_OPCODE) then
+
+                if (ValueValid(entry) = '1') then
+                    commited := true;
+                    outputValue <= Value(entry);
+                    isPush := '1';
+                end if;
+
+            elsif (entryOpCode = CALL_OPCODE) then
+                -- Value is PC (resolved already from decoding circuit)
+                -- wait for destination resolving
+                if (DestinationAddressValid(entry) = '1') then
+                    commited := true;
+                    pcWriteEnable := '1';
+
+                    --TODO add pc out value
+                    outputValue <= Value(entry);
+
+                    -- pcOutValue <= DestinationAddress(entry)
+                    isPush := '1';
+
+                end if;
 
             end if;
 
@@ -418,12 +441,14 @@ architecture rtl of ReorderBuffer is
             if (DestinationAddressValid(entry) = '1') then
                 commited := true;
                 if (Execute(entry) = '1') then --branch taken
-                    outputValue <= DestinationAddress(entry);
+                    outputValue <= DestinationAddress(entry); --TODO change to pc out value
                     pcWriteEnable := '1';
                 end if;
             end if;
 
         elsif (entryOpCode = NOP_OPCODE) then --no commit
+            -- Some people don't do anything, but history mentions them
+            -- NOP is one of them, may it rest in peace.
             commited := true; 
 
         elsif (entryOpCode = OUT_OPCODE) then
@@ -433,7 +458,7 @@ architecture rtl of ReorderBuffer is
                 portWriteEnable := '1';
             end if;
 
-        else 
+        else  --Commit to register
             if(ValueValid(entry) = '1') then 
                 commited := true;
                 outputValue <= Value(entry);

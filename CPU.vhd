@@ -30,6 +30,11 @@ architecture rtl of CPU is
 	signal ROBOut:				std_logic_vector(15 downto 0);
 
 	signal instQueueReset:		std_logic := '0';
+	signal RFAdapterOut:			std_logic_vector(15 downto 0) := (others => '0');
+	signal registerFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
+	signal readRegister:			std_logic_vector(2 downto 0)  := (others => '0');
+	signal destRegisterOut:			std_logic_vector(2 downto 0)  := (others => '0');
+	signal ROBWriteRegisterEnable: 	std_logic := '0';
 begin
 	
 	ROBEnableQueue <= not ROBFull;
@@ -84,12 +89,34 @@ begin
         output => instQueueOut
     );
 
-    rob: entity work.ReorderBuffer
-	port map(
-        clk => clk,
-        pcWriteOut => ROBwritePC,
-        pcValueOut => ROBnewPC
-    );
+
+ --   adapter: entity work.RFAdapter
+ --   port map(
+ --   	inputROB => outputValueSignal,
+ --   	inputMEM => memOut, --comes from data memory
+ --   	inputPort => portValue, --comes from the port
+ --   	inputPortEnable => portWriteEnableOut, -- comes from ROB
+ --   	isPop => isPopOut,
+ --   	output => RFAdapterOut --to be input to the register file
+ --   );
+
+ --   regFile: entit work.registerFile
+ --   port map (
+ --   	dataIn => RFAdapterOutF,
+ --   	dataOut => registerFileOut,
+ --   	clk => clk,
+ --   	reset => reset,
+ --   	readRegister => readRegister, --comes from decoding circuit
+ --   	writeRegister => destRegisterOut, -- comes from ROB or from adapter not sure
+ --   	writeEnable => ROBWriteRegisterEnable
+ --   );
+
+ --   rob: entity work.ReorderBuffer
+	--port map(
+ --       clk => clk,
+ --       pcWriteOut => ROBwritePC,
+ --       pcValueOut => ROBnewPC
+ --   );
 		
 	
 end architecture rtl;

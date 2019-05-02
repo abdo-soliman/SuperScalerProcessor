@@ -14,13 +14,14 @@ architecture rtl of InstructionRam is
 
 	TYPE ram_type is array(0 to 65535) of std_logic_vector(15 downto 0);
 	SIGNAL ram : ram_type := (others => (others => '0'));
-	
+	signal sgn : unsigned(15 downto 0);
 	begin
+		sgn <= unsigned(address);
 		process(clk,address) is
 			begin
 				if clk'event and clk = '1' then  
 					if readEnable = '1' then
-						dataOut <= ram(to_integer(unsigned(address))) & ram(to_integer(unsigned(address))+1);
+						dataOut <= ram(to_integer(sgn)) & ram(to_integer(sgn+1));
 					end if;
 				end if;
 		end process;

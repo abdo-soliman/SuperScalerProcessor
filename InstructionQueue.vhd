@@ -15,6 +15,7 @@ entity InstructionQueue is
         reset:  		in      	std_logic := '0';
         clk:    		in      	std_logic := '0';
         queueFull:		out 		std_logic := '0';
+        numberOfElementes:  out     std_logic_vector(3 downto 0) := (others => '0');
         output: 		out     	std_logic_vector(widthByTwo-1 downto 0) := (others => '0')
     );
 end entity InstructionQueue;
@@ -34,6 +35,7 @@ begin
     queueFull <= '0' when ((queueFullSignal = '0') or ((enable = '1') and (tail = "0111")))
     		else '1';
 
+    numberOfElementes <= tail;
     process(clk,reset)
     begin
         if (reset = '1') then
@@ -57,7 +59,7 @@ begin
     	elsif (clk'event and clk = '0') then 
         	if(queueFullSignal = '0') then 
 	        	q(to_integer(unsigned(tail))) <= input(31 downto 16);
-	        	q(to_integer(unsigned(tail))+1) <= input(15 downto 0);
+	        	q(to_integer(unsigned(tail+1))) <= input(15 downto 0);
 	        	tail <= tail + 2;
 	        	if (tail = "0110" or tail = "0101") then
 	        		queueFullSignal <= '1';

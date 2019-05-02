@@ -29,10 +29,13 @@ architecture rtl of CPU is
 	signal ramOut:				std_logic_vector(31 downto 0);
 	signal ROBOut:				std_logic_vector(15 downto 0);
 
+	signal instQueueReset:		std_logic := '0';
 begin
 	
 	ROBEnableQueue <= not ROBFull;
 
+	instQueueReset <= reset or ROBwritePC;
+	
 	pc: entity work.mRegister
 	generic map(n => 16)
 	port map (
@@ -75,7 +78,7 @@ begin
 	port map (
         input => ramOut,      	
         enable => ROBEnableQueue,
-        reset => reset,
+        reset => instQueueReset,
         clk => clk,
         queueFull => queueFull,
         output => instQueueOut
@@ -83,12 +86,9 @@ begin
 
     rob: entity work.ReorderBuffer
 	port map(
-        instruction => instQueueOut,
-        reset => reset,
         clk => clk,
-        ROBFull => ROBFull,
-        ROBEmpty => ROBEmpty,
-        output => ROBOut
+        pcWriteOut => ROBwritePC,
+        pcValueOut => ROBnewPC
     );
 		
 	

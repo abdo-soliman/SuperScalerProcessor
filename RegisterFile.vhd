@@ -10,118 +10,40 @@ use IEEE.numeric_std.all;
 --in case of jump (or call or any branching) we need to chane any given number of registers' tags
 --also the state changes two at max and one when commiting
 entity registerFile is
-    generic ( m : integer := 16);
+    generic ( n : integer := 16);
     port (
-        regValueIn:    in             std_logic_vector(m downto 0) := (others => '0'); --coming from ROB(commit stage)
-        destRegNumber: in           std_logic_vector(2 downto 0) := (others => '0');
-        enableWrite:   in      	    std_logic := '1'; --enable write maybe
-        enableRead:    in           std_logic := '0';
-        reset:         in      	    std_logic := '0'; --set all regs to zeros
-        clk:           in      	    std_logic := '0';
-        state:         out     	    std_logic_vector(1 downto 0) := (others => '0');--state of the requested register by the decoding circuit
-        regVlaueOut:   out            std_logic_vector(m downto 0) := (others => '0');--value of the reqested register by the decoding circuit
-        tagValueOut:   out            std_logic_vector(3 downto 0) := (others => '0');--tag if the state is in flight or ready
-        srcRegNumber:  in           std_logic_vector(2 downto 0) := (others => '0')
+        dataIn:                 in          std_logic_vector(n-1 downto 0) := (others => '0'); 
+        dataOut:                out         std_logic_vector(n-1 downto 0) := (others => '0');
+        clk:                    in      	std_logic := '1'; 
+        reset:                  in          std_logic := '0';
+        readRegister:           in          std_logic_vector(2 downto 0);
+        writeRegister:          in          std_logic_vector(2 downto 0);
+        writeEnable:            in          std_logic := '0'
     );
 end entity registerFile;
 
 architecture rtl of RegisterFile is
-    signal regWriteEnable: std_logic_vector(7 downto 0);
-    signal reg0          : std_logic_vector(m downto 0);
-    signal reg1          : std_logic_vector(m downto 0);
-    signal reg2          : std_logic_vector(m downto 0);
-    signal reg3          : std_logic_vector(m downto 0);
-    signal reg4          : std_logic_vector(m downto 0);
-    signal reg5          : std_logic_vector(m downto 0);
-    signal reg6          : std_logic_vector(m downto 0);
-    signal reg7          : std_logic_vector(m downto 0);
+
+    type rType is array(0 to 7) of std_logic_vector(n-1 downto 0);
+    signal q:       rType := (others => (others => '0'));
+    signal regOut:        std_logic_vector(n-1 downto 0);
+
 begin
-    decoder: entity work.Decoder
-    port map(
-        en => enableWrite,
-        selection => destRegNumber,
-        output => regWriteEnable
-    );
+    
+    dataOut <= q(to_integer(unsigned(readRegister)));
 
-    R0: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg0,
-        enable => regWriteEnable(0),
-        clk => clk,
-        reset => reset
-    );
+    process (clk,reset)
+    begin
+        if (reset = '1') then 
+            q <= (others => (others => '0'));
+        elsif (clk'event and clk = '1') then
 
-    R1: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg1,
-        enable => regWriteEnable(1),
-        clk => clk,
-        reset => reset
-    );
+            if(writeEnable = '1') then 
+                q(to_integer(unsigned(writeRegister))) <= dataIn;
+            end if;
 
-    R2: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg2,
-        enable => regWriteEnable(2),
-        clk => clk,
-        reset => reset
-    );
-
-    R3: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg3,
-        enable => regWriteEnable(3),
-        clk => clk,
-        reset => reset
-    );
-
-    R4: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg0,
-        enable => regWriteEnable(4),
-        clk => clk,
-        reset => reset
-    );
-
-    R5: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg0,
-        enable => regWriteEnable(5),
-        clk => clk,
-        reset => reset
-    );
-
-    R6: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg6,
-        enable => regWriteEnable(6),
-        clk => clk,
-        reset => reset
-    );
-
-    R7: entity work.mRegister
-    port map(
-        input => regValueIn,
-        output => reg7,
-        enable => regWriteEnable(7),
-        clk => clk,
-        reset => reset
-    );
-
-
-
-    -- for i in 0 to 8 generate
-    --     reg: entity work.mRegister port map(
-    --         input => regValueIn,
-    --         output => 
-    --         );
+        end if;
+    end process;
     
     
 end architecture rtl;

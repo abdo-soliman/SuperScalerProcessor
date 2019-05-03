@@ -7,7 +7,7 @@ opcode = {}
 # GROUP 1
 opcode['NOP'] = '00000'
 opcode['SETC'] = '00010'
-opcode['CLC'] = '00011'
+opcode['CLRC'] = '00011'
 opcode['INC'] = '00110'
 opcode['DEC'] = '00101'
 opcode['IN'] = '00110'
@@ -30,7 +30,7 @@ opcode['LDM'] = '10110'
 # GROUP 4
 opcode['CALL'] = '11000'
 opcode['RET'] = '11001'
-opcode['RTL'] = '11010'
+opcode['RTI'] = '11010'
 opcode['JZ'] = '11100'
 opcode['JN'] = '11101'
 opcode['JC'] = '11110'
@@ -49,7 +49,8 @@ registers['R7'] = '111'
 
 userInstructions = []
 inputFileName = "instruction.txt"
-outFile = open("output.txt","w+")
+mynum = 0
+outFile = open("MEMoutput.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -62,48 +63,61 @@ with open(inputFileName) as f:
         line = line.strip()
         line = line.upper()
         line = line.split(' ')
-        
+
         if '.ORG' in line:
-            address = line[1]
-            for i inrange (0,address):
+            address = int(line[1]) 
+            for i in range (mynum,address):
                 outFile.write("0".zfill(16))
                 outFile.write("\n")
-            print(address)
+                mynum += 1
             continue
+        if (re.match( r"^([0-9]+)$",line[0])):
+             outFile.write(str(binary_repr(int(line[0]),width=None)).zfill(16))
+             outFile.write("\n")
+             mynum += 1
+             continue
+        
+
         instruction = line[0]
         print(instruction)
-        line = line[1]
-        if (len(line) != 2):   # 2 operand  and immediate value
+        if len(line) > 1 :
+            line = line[1]
+        if (len(line) > 2):   # 2 operand  and immediate value
             register1 = line.split(',')[0]
             if (instruction == 'LDM') or (instruction == 'SHR') or (instruction == 'SHL'):
-                line = register1 + instruction
-                line = line.zfill(16)
-                line = line [::-1]
-                outFile.write(line)
+                number = int(line.split(',')[1])
+                line2 = opcode[instruction] +registers[register1]
+                line2 = line2 [::-1]
+                line2 = line2.zfill(16)
+                line2 = line2 [::-1]
+                outFile.write(line2)
                 outFile.write("\n")
-                outFile.write(binary_repr(int(line.split(',')[1]).zfill(16),width=None))
-                print(binary_repr(int(line.split(',')[1])).zfill(16))
-                outFile.write("\n")                
+                outFile.write(str(binary_repr(number,width=None)).zfill(16))
+                outFile.write("\n")
             else:     # 2 operand 
                 register2 = line.split(',')[1]
-                line = register2 + register1 + instruction
+                line = opcode[instruction] + registers[register1] + registers[register2]
+                line = line [::-1]
                 line = line.zfill(16)
                 line = line [::-1]
                 print(line)
                 outFile.write(line)
                 outFile.write("\n")
                 print(register2)   
-        elif (len(line)== 2):            # 1 operand 
-            register1 = line # TODO Ignore this 
-            line = register1 + instruction
+        elif (len(line) == 2):            # 1 operand 
+            register1 = line
+            line = opcode[instruction] + registers[register1]
+            line = line [::-1]
             line = line.zfill(16)
             line = line [::-1]
             outFile.write(line)
             outFile.write("\n")
             print(register1)    
         else :   # No operand   
-            line = instruction
+            line = opcode[instruction]
+            line = line [::-1]
             line = line.zfill(16)
             line = line [::-1] 
             outFile.write(line)
             outFile.write("\n")
+        mynum += 1

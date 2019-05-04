@@ -105,10 +105,12 @@ architecture rtl of ReorderBuffer is
             OPcode := getOpCode(entry);
             destRegisterGotValue := false;
 
-            if (isTypeZero(OPcode) or isTypeOne(OPcode) or OPcode = LDD_OPCODE or OPcode = LDM_OPCODE) then
+            if ((isTypeZero(OPcode) and OPcode /= OUT_OPCODE) or isTypeOne(OPcode) or OPcode = LDD_OPCODE or OPcode = LDM_OPCODE) then
+
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
+                    
                     if(aluTagInt = index )then
                         entry(42 downto 27) := aluValue; --value
                     else
@@ -128,6 +130,7 @@ architecture rtl of ReorderBuffer is
                     validBit := '1';
                     entry(1) := '1'; -- done bit
                     doneBit := '1';
+
                 end if;
             end if;
             
@@ -136,7 +139,7 @@ architecture rtl of ReorderBuffer is
                 if(Execute(entry) = '0' and aluTagInt = WaitingTag(entry) and aluTagValid = '1') then
 
                     entry(2) := '1';
-                    --Decision of jump
+                    --Done is decision of jump
                     --If 1, jmp is taken, 
                     --else untaken
                     if(OPcode = JC_OPCODE and isCarrySet(flags)) then 
@@ -198,7 +201,7 @@ architecture rtl of ReorderBuffer is
 
             end if;
 
-            if (OPcode = PUSH_OPCODE) then 
+            if (OPcode = OUT_OPCODE or OPcode = PUSH_OPCODE) then 
 
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
@@ -222,8 +225,8 @@ architecture rtl of ReorderBuffer is
                 
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
-                    firstTag := Value(entry)(3 downto 0);
-                    secondTag := DestinationAddress(entry)(3 downto 0);
+                    firstTag := Value(entry)(3 downto 0); --value tag
+                    secondTag := DestinationAddress(entry)(3 downto 0); --destination tag
 
                     if (ValueValid(entry) = '0') then 
                         if(aluTagValid = '1' and aluTag = firstTag) then
@@ -250,25 +253,6 @@ architecture rtl of ReorderBuffer is
                
 
             end if;
-            --------------------------------------------------------------------
-            --******************************JUMPS-------------------------------
-            --if(checkJMPFamily(OPcode) = '1' and validBit = '1' and doneBit = '1') then--check if any type of jumps except for unconidtional one
-            --        if(OPcode = JZ_OPCODE) then --jump zero
-            --            if(flags(2) = '1') then --if zero flag is one
-            --                jumpZeroTrue := '1';
-            --            end if;
-            --        elsif (OPcode = JN_OPCODE) then --jump negative
-            --            if(flags(1) = '1') then --if zero flag is one
-            --                jumpNegativeTrue := '1';
-            --            end if;
-            --        elsif (OPcode = JC_OPCODE) then --jump carry
-            --            if(flags(0) = '1') then --if zero flag is one
-            --                jumpCarryTrue := '1';
-            --            end if;
-            --        end if;
-            --    end if;
-            --------------------------------------------------------------------
-        --OPcode := OpCode(entry => entry);
         end updateTagAluMemory;
     ----------------------------------------------------------------------------
     procedure inputParser(variable    entry:          inout       std_logic_vector(width-1 downto 0);
@@ -311,8 +295,8 @@ architecture rtl of ReorderBuffer is
 
                 if (entryOpCode = JC_OPCODE) then 
 
-                    if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode) or
-                        loopOpCode = SETC_OPCODE or loopOpCode = CLC_OPCODE) then
+                    if (Done(q(r)) = '0' and (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode) or
+                        loopOpCode = SETC_OPCODE or loopOpCode = CLC_OPCODE)) then
 
                         entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
                         entry(2) := '0'; --Execute/wait bit is not valid    
@@ -322,8 +306,8 @@ architecture rtl of ReorderBuffer is
                     end if;
 
                 else 
-                    if (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)
-                        or isLogicalFamily(loopOpCode) ) then
+                    if (Done(q(r)) = '0' and (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)
+                        or isLogicalFamily(loopOpCode)) ) then
 
                         entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
                         entry(2) := '0'; --Execute/wait bit is not valid    
@@ -461,7 +445,7 @@ architecture rtl of ReorderBuffer is
         elsif (isJmpFamily(entryOpCode) or entryOpCode = JMP_OPCODE) then --jumps
             if (DestinationAddressValid(entry) = '1') then
                 commited := true;
-                if (Execute(entry) = '1') then --branch taken
+                if (Done(entry) = '1') then --branch taken
                     pcOutValue <= DestinationAddress(entry); --TODO change to pc out value
                     pcWriteEnable := '1';
                 end if;

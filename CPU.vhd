@@ -5,7 +5,10 @@ use IEEE.std_logic_unsigned.all;
 entity CPU is
 	port (
 		clk: in 				std_logic 		:= '0';
-		reset: in 				std_logic 		:= '0'
+		reset: in 				std_logic 		:= '0';
+		inputPort: in 			std_logic_vector(15 downto 0) := (others => '0'); 			
+		outputPort: out 		std_logic_vector(15 downto 0) := (others => '0'); 			
+		interrupt:	in 			std_logic 		:= '0'
 	);
 end entity CPU;
 
@@ -15,32 +18,53 @@ architecture rtl of CPU is
 	signal pcControllerOut:		std_logic_vector(15 downto 0);
 	signal pcEnable:			std_logic := '1';
 	signal pcOut:				std_logic_vector(15 downto 0);
-	signal ROBnewPC:			std_logic_vector(15 downto 0) := "0000000001001000";
-	signal ROBwritePC:			std_logic := '0';
-	signal queueFull:			std_logic := '0';
 	signal memRead:				std_logic := '0';
+
+	signal ROBnewPC:			std_logic_vector(15 downto 0) := (others => '0');
+	signal ROBwritePC:			std_logic := '0';
+	signal ROBOutputValue:		std_logic_vector(15 downto 0) := (others => '0'); --data to be written in RF
+	signal ROBportWriteEnable: 	std_logic := '0';
+	signal ROBisPop:			std_logic := '0';
+	signal ROBwriteRegisterEnable: 	std_logic := '0';
+	signal ROBfirstReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
+	signal ROBsecondReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
+	signal ROBwriteRegister:		std_logic_vector(2 downto 0) := (others => '0');
+
+
+	signal queueFull:			std_logic := '0';
 	signal ROBEnableQueue:		std_logic := '1';
 	signal ROBFull:				std_logic := '0';
 	signal ROBEmpty:			std_logic := '0';
+
 	signal instQueueOut:		std_logic_vector(15 downto 0) := (others => '0');
 
 
-	--For testing
+	signal MEMnewPC:			std_logic_vector(15 downto 0) := (others => '0');
+	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
+
+	--For testing --------------------------------------------------------------
 	signal ramOut:				std_logic_vector(31 downto 0);
 	signal ROBOut:				std_logic_vector(15 downto 0);
-
+	----------------------------------------------------------------------------
 	signal instQueueReset:		std_logic := '0';
+
 	signal RFAdapterOut:			std_logic_vector(15 downto 0) := (others => '0');
-	signal registerFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
-	signal readRegister:			std_logic_vector(2 downto 0)  := (others => '0');
-	signal destRegisterOut:			std_logic_vector(2 downto 0)  := (others => '0');
-	signal ROBWriteRegisterEnable: 	std_logic := '0';
+	signal firstRegisterFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
+	signal secondRegisterFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
+
+	signal dataMEMout:				std_logic_vector(15 downto 0) := (others => '0');
+
+
+
+
 begin
 	
 	ROBEnableQueue <= not ROBFull;
-
 	instQueueReset <= reset or ROBwritePC;
 	
+	overWrittenPC <= MEMnewPC when ROBisPop = '1'
+			else ROBnewPC;
+
 	pc: entity work.mRegister
 	generic map(n => 16)
 	port map (
@@ -64,7 +88,7 @@ begin
 	pcCont:	entity work.PCController
 	port map (
 		currentPC => pcOut,
-		JMPnewPC => ROBnewPC,
+		JMPnewPC => overWrittenPC,
 		JMPWrite => ROBwritePC,
 		queueFull => queueFull,
 		newPC	 => pcControllerOut,
@@ -90,26 +114,28 @@ begin
     );
 
 
- --   adapter: entity work.RFAdapter
- --   port map(
- --   	inputROB => outputValueSignal,
- --   	inputMEM => memOut, --comes from data memory
- --   	inputPort => portValue, --comes from the port
- --   	inputPortEnable => portWriteEnableOut, -- comes from ROB
- --   	isPop => isPopOut,
- --   	output => RFAdapterOut --to be input to the register file
- --   );
+    adapter: entity work.RFAdapter
+    port map(
+    	inputROB => ROBOutputValue,
+    	inputMEM => dataMEMout, --comes from data memory
+    	inputPort => inputPort, --comes from the port
+    	inputPortEnable => ROBportWriteEnable, -- comes from ROB
+    	isPop => ROBisPop,
+    	output => RFAdapterOut --to be input to the register file
+    );
 
- --   regFile: entit work.registerFile
- --   port map (
- --   	dataIn => RFAdapterOutF,
- --   	dataOut => registerFileOut,
- --   	clk => clk,
- --   	reset => reset,
- --   	readRegister => readRegister, --comes from decoding circuit
- --   	writeRegister => destRegisterOut, -- comes from ROB or from adapter not sure
- --   	writeEnable => ROBWriteRegisterEnable
- --   );
+    regFile: entity work.registerFile
+    port map (
+    	dataIn => RFAdapterOut,
+    	firstDataOut => firstRegisterFileOut,
+    	secondDataOut => secondRegisterFileOut,
+    	clk => clk,
+    	reset => reset,
+    	firstReadRegister => ROBfirstReadRegister, --comes from decoding circuit
+    	secondReadRegister => ROBsecondReadRegister, --comes from decoding circuit
+    	writeRegister => ROBwriteRegister, -- comes from ROB or from adapter not sure
+    	writeEnable => ROBwriteRegisterEnable
+    );
 
  --   rob: entity work.ReorderBuffer
 	--port map(

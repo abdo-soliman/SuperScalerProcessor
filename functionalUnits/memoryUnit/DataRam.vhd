@@ -24,6 +24,7 @@ architecture rtl of DataRam is
 						ram(to_integer(unsigned(address))) <= dataIn;
 					end if;					
 				end if;
-				dataOut <= ram(to_integer(unsigned(address)));
 		end process;
+
+		dataOut <= ram(to_integer(unsigned(address)));
 end rtl;

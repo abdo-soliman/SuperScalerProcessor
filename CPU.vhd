@@ -42,8 +42,6 @@ architecture rtl of CPU is
 
 	signal instQueueOut:		std_logic_vector(15 downto 0) := (others => '0');
 
-
-	signal MEMnewPC:			std_logic_vector(15 downto 0) := (others => '0');
 	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
 
 	--For testing --------------------------------------------------------------
@@ -75,7 +73,7 @@ begin
 	ROBEnableQueue <= not ROBFull;
 	instQueueReset <= reset or ROBwritePC;
 	
-	overWrittenPC <= MEMnewPC when ROBisPop = '1'
+	overWrittenPC <= dataMEMout when ROBisPop = '1'
 			else ROBnewPC;
 
 	outputPort <= ROBOutputValue when ROBportWriteEnable = '1'

@@ -25,13 +25,14 @@ architecture behavioral of arithmetic_unit is
         );
     end component adder;
     signal tempCin: std_logic;
+    signal tempA:   std_logic_vector(n-1 downto 0);
     signal tempB:   std_logic_vector(n-1 downto 0);
 
     begin
         adder_inst : adder
             generic map (n => n)
             port map (
-                A => a,
+                A => tempA,
                 B => tempB,
                 Cin => tempCin,
                 Sum => f,
@@ -40,8 +41,9 @@ architecture behavioral of arithmetic_unit is
 
         process(A, B, cin, s)
         begin
+            tempA <= a;
             if (s = "000") then
-                tempB <= (others => '0');
+                tempA <= (others => '0');
                 tempCin <= '0';
             elsif (s = "001") then
                 tempB <= not B;

@@ -39,16 +39,18 @@ constant JC_OPCODE:     std_logic_vector(4 downto 0) := "11110";
 constant JMP_OPCODE:    std_logic_vector(4 downto 0) := "11111";
 
 ------------------------ALU Opcodes---------------------------------------------
-constant MOV_ALU_CODE: std_logic_vector(4 downto 0) := "00000";
-constant SUB_ALU_CODE: std_logic_vector(4 downto 0) := "00001";
-constant DEC_ALU_CODE: std_logic_vector(4 downto 0) := "00010";
-constant INC_ALU_CODE: std_logic_vector(4 downto 0) := "00011";
-constant ADD_ALU_CODE: std_logic_vector(4 downto 0) := "00100";
-constant AND_ALU_CODE: std_logic_vector(4 downto 0) := "01000";
-constant OR_ALU_CODE:  std_logic_vector(4 downto 0) := "01001";
-constant NOT_ALU_CODE: std_logic_vector(4 downto 0) := "01010";
-constant SHL_ALU_CODE: std_logic_vector(4 downto 0) := "10000";
-constant SHR_ALU_CODE: std_logic_vector(4 downto 0) := "10001";
+constant MOV_ALU_CODE:  std_logic_vector(4 downto 0) := "00000";
+constant SUB_ALU_CODE:  std_logic_vector(4 downto 0) := "00001";
+constant DEC_ALU_CODE:  std_logic_vector(4 downto 0) := "00010";
+constant INC_ALU_CODE:  std_logic_vector(4 downto 0) := "00011";
+constant ADD_ALU_CODE:  std_logic_vector(4 downto 0) := "00100";
+constant SETC_ALU_CODE: std_logic_vector(4 downto 0) := "00101";
+constant CLC_ALU_CODE:  std_logic_vector(4 downto 0) := "00110";
+constant AND_ALU_CODE:  std_logic_vector(4 downto 0) := "01000";
+constant OR_ALU_CODE:   std_logic_vector(4 downto 0) := "01001";
+constant NOT_ALU_CODE:  std_logic_vector(4 downto 0) := "01010";
+constant SHL_ALU_CODE:  std_logic_vector(4 downto 0) := "10000";
+constant SHR_ALU_CODE:  std_logic_vector(4 downto 0) := "10001";
 --------------------------------------------------------------------------------
 constant CONST_WIDTH: integer := 49; 
 

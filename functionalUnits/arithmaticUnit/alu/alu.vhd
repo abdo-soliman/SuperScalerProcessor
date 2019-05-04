@@ -89,9 +89,12 @@ architecture structural of alu is
             suF;
         f <= tempF;
 
-        tempCout <= auCout when s(4 downto 3) = "00" else
+        tempCout <= '1' when s = "00101" else
+            '0' when s = "00110" else
+            auCout when s(4 downto 3) = "00" else
             '0' when s(4 downto 3) = "01" else
             suCout;
+
         carry <= tempCout;
         cout <= tempCout;
 

@@ -5,24 +5,28 @@ use IEEE.std_logic_unsigned.all;
 entity ReservationStation is
 	generic (n: integer := 16);
 	port(
-		clk:						in std_logic;
-		invClk:						in std_logic;
-		reset:						in std_logic;
-		lastExcutedDestName:		in std_logic_vector(3 downto 0);
-		lastExcutedDestNameValue:	in std_logic_vector(n-1 downto 0);
-		destName:   				in std_logic_vector(3 downto 0);
-		inOpCode:					in std_logic_vector(4 downto 0) := "00100";
-		src1Tag:					in std_logic_vector(15 downto 0);
-		src2Tag:					in std_logic_vector(15 downto 0);
-		src1Valid:					in std_logic_vector(0 downto 0);
-		src2Valid:					in std_logic_vector(0 downto 0);
-		inEnables:					in std_logic_vector(6 downto 0);
-		outEnable:					in std_logic := '0';
-		ready:						out std_logic := '0';
-		outOpcode:					out std_logic_vector(4 downto 0) := (others => 'Z');
-		src1value:  				out std_logic_vector(15 downto 0) := (others => 'Z');
-		src2value:  				out std_logic_vector(15 downto 0):= (others => 'Z');
-		outDestName:				out std_logic_vector(3 downto 0) := (others => 'Z')
+		clk:							in std_logic;
+		invClk:							in std_logic;
+		reset:							in std_logic;
+		validAlu:						in std_logic;
+		validMem:						in std_logic;
+		lastExcutedAluDestName:			in std_logic_vector(2 downto 0);
+		lastExcutedAluDestNameValue:	in std_logic_vector(n-1 downto 0);
+		lastExcutedMemDestName:			in std_logic_vector(2 downto 0);
+		lastExcutedMemDestNameValue:	in std_logic_vector(n-1 downto 0);
+		destName:						in std_logic_vector(2 downto 0);
+		inOpCode:						in std_logic_vector(4 downto 0);
+		src1Tag:						in std_logic_vector(15 downto 0);
+		src2Tag:						in std_logic_vector(15 downto 0);
+		src1Valid:						in std_logic_vector(0 downto 0);
+		src2Valid:						in std_logic_vector(0 downto 0);
+		inEnables:						in std_logic_vector(6 downto 0);
+		outEnable:						in std_logic := '0';
+		ready:							out std_logic := '0';
+		outOpcode:						out std_logic_vector(4 downto 0) := (others => 'Z');
+		src1value:						out std_logic_vector(15 downto 0) := (others => 'Z');
+		src2value:						out std_logic_vector(15 downto 0):= (others => 'Z');
+		outDestName:					out std_logic_vector(2 downto 0) := (others => 'Z')
 	);
 end entity ReservationStation;
 
@@ -57,18 +61,14 @@ architecture rtl of ReservationStation is
 	signal opCodeRegReset:	std_logic := '0';
 	signal opCodeRegOutput:	std_logic_vector(4 downto 0) := (others => '0');
 
-	signal destNameRegInput:	std_logic_vector(3 downto 0) := (others => '0');
+	signal destNameRegInput:	std_logic_vector(2 downto 0) := (others => '0');
 	signal destNameRegEnable:	std_logic := '0';
 	signal destNameRegReset:	std_logic := '0';
-	signal destNameRegOutput:	std_logic_vector(3 downto 0) := (others => '0');
-
-	-- signal invClk: std_logic := not clk;
+	signal destNameRegOutput:	std_logic_vector(2 downto 0) := (others => '0');
 
 	begin
 		process(clk, outEnable)
-		-- variable stopReady: std_logic;
 		begin
-			-- stopReady := '0';
 
 			if reset = '1' then
 				srcRegTagReset1 <= '1';
@@ -81,20 +81,34 @@ architecture rtl of ReservationStation is
 			else
 				if (busyRegOutput = "1") then
 					-- check if value of source 1 calculated 
-					if (lastExcutedDestName = src1Tag and srcRegValidOutput1 = "0") then
+					if (validAlu = '1' and lastExcutedAluDestName = src1Tag and srcRegValidOutput1 = "0") then
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
 						srcRegTagEnable1 <= '1';
-						srcRegTagInput1 <= lastExcutedDestNameValue;
-					-- check if value of source 2 calculated 
-					elsif (lastExcutedDestName = src2Tag  and srcRegValidOutput2 = "0") then
+						srcRegTagInput1 <= lastExcutedAluDestNameValue;
+					-- check if value of source 2 calculated
+					elsif (validAlu = '1' and lastExcutedAluDestName = src2Tag  and srcRegValidOutput2 = "0") then
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';
 						srcRegTagEnable2 <= '1';
-						srcRegTagInput2 <= lastExcutedDestNameValue;
-					-- create new one with its values 
+						srcRegTagInput2 <= lastExcutedAluDestNameValue;
+					-- create new one with its values
+					elsif (validMem = '1' and lastExcutedMemDestName = src1Tag and srcRegValidOutput1 = "0") then
+						srcRegValidInput1 <= "1";
+						srcRegValidEnable1 <= '1';
+						srcRegValidReset1 <= '0';
+						srcRegTagEnable1 <= '1';
+						srcRegTagInput1 <= lastExcutedMemDestNameValue;
+						-- check if value of source 2 calculated
+					elsif (validMem = '1' and lastExcutedMemDestName = src2Tag  and srcRegValidOutput2 = "0") then
+						srcRegValidInput2 <= "1";
+						srcRegValidEnable2 <= '1';
+						srcRegValidReset2 <= '0';
+						srcRegTagEnable2 <= '1';
+						srcRegTagInput2 <= lastExcutedMemDestNameValue;
+					-- create new one with its values
 					end if;
 				end if;
 
@@ -225,7 +239,7 @@ architecture rtl of ReservationStation is
 		);
 
 		destNameReg: entity work.mRegister
-		generic map (n => 4)
+		generic map (n => 3)
 		port map (
 			input	=> destNameRegInput,
 			enable	=> destNameRegEnable,

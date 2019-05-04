@@ -6,20 +6,26 @@ use work.Constants.all;
 entity aluReservationStations is
     generic (n: integer := 16);
     port (
-        clk:                      in std_logic;
-        issue:                    in std_logic;
-        opcode:                   in std_logic_vector(4 downto 0) := "01100";
-        tag1:                     in std_logic_vector(n-1 downto 0);
-        tag2:                     in std_logic_vector(n-1 downto 0);
-        valid1:                   in std_logic;
-        valid2:                   in std_logic;
-        issueDestName:            in std_logic_vector(3 downto 0);
-        lastExcutedDestName:      inout std_logic_vector(3 downto 0);
-        lastExcutedDestNameValue: in std_logic_vector(n-1 downto 0);
-        aluOp:                    out std_logic_vector(4 downto 0);
-        op1:                      out std_logic_vector(n-1 downto 0);
-        op2:                      out std_logic_vector(n-1 downto 0);
-        full:                     out std_logic
+        clk:                            in std_logic;
+        issue:                          in std_logic;
+        reset:                          in std_logic;
+        validAlu:                       in std_logic;
+        validMem:                       in std_logic;
+        opcode:                         in std_logic_vector(4 downto 0);
+        tag1:                           in std_logic_vector(n-1 downto 0);
+        tag2:                           in std_logic_vector(n-1 downto 0);
+        valid1:                         in std_logic;
+        valid2:                         in std_logic;
+        issueDestName:                  in std_logic_vector(2 downto 0);
+        lastExcutedAluDestName:         inout std_logic_vector(2 downto 0);
+        lastExcutedAluDestNameValue:    in std_logic_vector(n-1 downto 0);
+        lastExcutedMemDestName:         in std_logic_vector(2 downto 0);
+        lastExcutedMemDestNameValue:    in std_logic_vector(n-1 downto 0);
+        aluOp:                          out std_logic_vector(4 downto 0);
+        op1:                            out std_logic_vector(n-1 downto 0);
+        op2:                            out std_logic_vector(n-1 downto 0);
+        full:                           out std_logic;
+        valid:                          out std_logic
     );
 end entity aluReservationStations;
 
@@ -54,8 +60,12 @@ architecture mixed of aluReservationStations is
                 clk                         => clk,
                 invClk                      => invClk,
                 reset                       => resets(i),
-                lastExcutedDestName         => lastExcutedDestName,
-                lastExcutedDestNameValue    => lastExcutedDestNameValue,
+                validAlu                    => validAlu,
+                validMem                    => validMem,
+                lastExcutedAluDestName      => lastExcutedAluDestName,
+                lastExcutedAluDestNameValue => lastExcutedAluDestNameValue,
+                lastExcutedMemDestName      => lastExcutedMemDestName,
+                lastExcutedMemDestNameValue => lastExcutedMemDestNameValue,
                 destName                    => issueDestName,
                 inOpCode                    => tempAluOp,
                 src1Tag                     => tag1,
@@ -74,11 +84,12 @@ architecture mixed of aluReservationStations is
                 outOpcode                   => aluOp,
                 src1value                   => op1,
                 src2value                   => op2,
-                outDestName                 => lastExcutedDestName
+                outDestName                 => lastExcutedAluDestName
             );
         end generate genRs;
 
-        process (clk, issue)
+        resets <= (others => '0');
+        process (clk, issue, reset)
         variable found1: integer;
         variable found2: integer;
         begin
@@ -86,7 +97,9 @@ architecture mixed of aluReservationStations is
             found2 := 0;
 
             invClk <= not clk;
-            if (issue = '1') then
+            if (reset = '1') then
+                resets <= (others => '1');
+            elsif (issue = '1') then
                 if (opcode = MOV_OPCODE) then
                     tempAluOp <= MOV_ALU_CODE;
                 elsif (opcode = SUB_OPCODE) then
@@ -107,6 +120,10 @@ architecture mixed of aluReservationStations is
                     tempAluOp <= SHL_ALU_CODE;
                 elsif (opcode = SHR_OPCODE) then
                     tempAluOp <= SHR_ALU_CODE;
+                elsif (opcode = SETC_OPCODE) then
+                    tempAluOp <= SETC_ALU_CODE;
+                elsif (opcode = CLC_OPCODE) then
+                    tempAluOp <= CLC_ALU_CODE;
                 else
                     tempAluOp <= "11111";
                 end if;
@@ -138,18 +155,22 @@ architecture mixed of aluReservationStations is
                 end if;
             end if;
 
-            if (clk'event and clk = '0') then
-                for i in 0 to 11 loop
-                    if (found2 = 0) then
-                        if (readies(i) = '1') then
-                            outEnables(i) <= '1';
-                            busies(i) <= '0';
-                            found2 := 1;
-                        else
-                            outEnables(i) <= '0';
+            if (reset /= '1') then
+                if (clk'event and clk = '0') then
+                    for i in 0 to 11 loop
+                        if (found2 = 0) then
+                            if (readies(i) = '1') then
+                                outEnables(i) <= '1';
+                                valid <= '1';
+                                busies(i) <= '0';
+                                found2 := 1;
+                            else
+                                outEnables(i) <= '0';
+                                valid <= '0';
+                            end if;
                         end if;
-                    end if;
-                end loop;
+                    end loop;
+                end if;
             end if;
 
             found1 := 0;

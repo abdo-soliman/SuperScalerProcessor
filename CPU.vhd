@@ -23,12 +23,16 @@ architecture rtl of CPU is
 	signal ROBnewPC:			std_logic_vector(15 downto 0) := (others => '0');
 	signal ROBwritePC:			std_logic := '0';
 	signal ROBOutputValue:		std_logic_vector(15 downto 0) := (others => '0'); --data to be written in RF
+	signal ROBOutputAddress:		std_logic_vector(15 downto 0) := (others => '0'); --data to be written in RF
+	signal ROBmemWriteEnable: 	std_logic := '0';
 	signal ROBportWriteEnable: 	std_logic := '0';
+	signal ROBportReadEnable: 	std_logic := '0';
+	signal ROBisPush:			std_logic := '0';
 	signal ROBisPop:			std_logic := '0';
 	signal ROBwriteRegisterEnable: 	std_logic := '0';
 	signal ROBfirstReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
 	signal ROBsecondReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
-	signal ROBwriteRegister:		std_logic_vector(2 downto 0) := (others => '0');
+	signal ROBdestRegister:		std_logic_vector(2 downto 0) := (others => '0');
 
 
 	signal queueFull:			std_logic := '0';
@@ -43,8 +47,8 @@ architecture rtl of CPU is
 	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
 
 	--For testing --------------------------------------------------------------
-	signal ramOut:				std_logic_vector(31 downto 0);
-	signal ROBOut:				std_logic_vector(15 downto 0);
+	signal ramOut:				std_logic_vector(31 downto 0) := (others => '0');
+	signal ROBOutToRS:			std_logic_vector(48 downto 0) := (others => '0'); --length may be changed @Ahmed
 	----------------------------------------------------------------------------
 	signal instQueueReset:		std_logic := '0';
 
@@ -53,6 +57,15 @@ architecture rtl of CPU is
 	signal secondRegisterFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
 
 	signal dataMEMout:				std_logic_vector(15 downto 0) := (others => '0');
+	signal dataMEMtag:				std_logic_vector(3 downto 0) := (others => '0');
+	signal dataMEMtagValid:			std_logic := '0';
+	
+
+	signal ALUout:					std_logic_vector(15 downto 0) := (others => '0');
+	signal ALUtag:					std_logic_vector(3 downto 0) := (others => '0');
+	signal ALUtagValid:				std_logic := '0';
+
+	signal flags:					std_logic_vector(2 downto 0) := (others => '0');
 
 
 
@@ -64,6 +77,9 @@ begin
 	
 	overWrittenPC <= MEMnewPC when ROBisPop = '1'
 			else ROBnewPC;
+
+	outputPort <= ROBOutputValue when ROBportWriteEnable = '1'
+				else (others => 'Z');
 
 	pc: entity work.mRegister
 	generic map(n => 16)
@@ -119,7 +135,7 @@ begin
     	inputROB => ROBOutputValue,
     	inputMEM => dataMEMout, --comes from data memory
     	inputPort => inputPort, --comes from the port
-    	inputPortEnable => ROBportWriteEnable, -- comes from ROB
+    	inputPortEnable => ROBportReadEnable, -- comes from ROB
     	isPop => ROBisPop,
     	output => RFAdapterOut --to be input to the register file
     );
@@ -133,16 +149,38 @@ begin
     	reset => reset,
     	firstReadRegister => ROBfirstReadRegister, --comes from decoding circuit
     	secondReadRegister => ROBsecondReadRegister, --comes from decoding circuit
-    	writeRegister => ROBwriteRegister, -- comes from ROB or from adapter not sure
+    	writeRegister => ROBdestRegister, -- comes from ROB or from adapter not sure
     	writeEnable => ROBwriteRegisterEnable
     );
 
- --   rob: entity work.ReorderBuffer
-	--port map(
- --       clk => clk,
- --       pcWriteOut => ROBwritePC,
- --       pcValueOut => ROBnewPC
- --   );
+    rob: entity work.ReorderBuffer --Not all signals are connected to ROB
+	port map(
+		instruction => instQueueOut,
+        aluValue => ALUout,
+        aluTag => ALUtag,
+        mememoryValue => dataMEMout,
+        memoryTag => dataMEMtag,
+        aluTagValid => ALUtagValid,
+        memoryTagValid => dataMEMtagValid,
+        flags => flags,
+
+        reset => reset,
+        clk => clk,
+        ROBFull => ROBFull,
+
+        pcWriteOut => ROBwritePC,
+        pcValueOut => ROBnewPC,
+        destRegisterOut => ROBdestRegister,
+        registerWriteEnableOut => ROBwriteRegisterEnable,
+        outputValueOut => ROBOutputValue,
+        addressOut => ROBOutputAddress,
+        memoryWriteEnableOut => ROBmemWriteEnable,
+        portWriteEnableOut => ROBportWriteEnable,
+        portReadEnableOut => ROBportReadEnable,
+        isPushOut => ROBisPush,
+        isPopOut => ROBisPop,
+        outputRS => ROBOutToRS
+    );
 		
 	
 end architecture rtl;

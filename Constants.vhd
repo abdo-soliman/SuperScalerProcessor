@@ -61,9 +61,13 @@ function getOpCode(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others =
 ----------------------------------------------------------------------------
 function Value(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	return  std_logic_vector;
 ----------------------------------------------------------------------------
+function ValueTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))     return  std_logic_vector;
+----------------------------------------------------------------------------
 function ValueValid(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	return  std_logic;
 ----------------------------------------------------------------------------
 function DestinationAddress(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	return  std_logic_vector;
+----------------------------------------------------------------------------
+function DestinationAddressTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))    return  std_logic_vector;
 ----------------------------------------------------------------------------
 function DestinationRegister(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	return  std_logic_vector;
 ----------------------------------------------------------------------------
@@ -123,6 +127,12 @@ begin
     return entry(42 downto 27);
 end Value;
 ----------------------------------------------------------------------------
+function ValueTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))     
+                    return  std_logic_vector is
+begin
+    return entry(42 downto 39);
+end ValueTag;
+----------------------------------------------------------------------------
 function ValueValid(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
 					return  std_logic is
 begin
@@ -134,6 +144,12 @@ function DestinationAddress(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := 
 begin
     return entry(25 downto 10);
 end DestinationAddress;
+----------------------------------------------------------------------------
+function DestinationAddressTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))    
+                    return  std_logic_vector is
+begin
+    return entry(25 downto 22);
+end DestinationAddressTag;
 ----------------------------------------------------------------------------
 function DestinationRegister(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
 					return  std_logic_vector is

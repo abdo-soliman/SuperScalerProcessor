@@ -165,7 +165,8 @@ architecture rtl of ReorderBuffer is
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
                     firstTag := DestinationAddressTag(entry);
-
+                    report "In jump";
+                    report integer'image(to_integer(unsigned(firstTag)));
                     if (DestinationAddressValid(entry) = '0') then 
 
                         if(aluTagValid = '1' and aluTag = firstTag) then
@@ -643,9 +644,9 @@ begin
             --    lastStoreSignal <= lastStoreV;
             --    lastStoreValidSignal <= '1';
             --end if;
-            --q(to_integer(unsigned(writePointer))) <= inp;
+            q(to_integer(unsigned(writePointer))) <= inp;
 
-            --writePointer <= writePointer + 1;
+            writePointer <= writePointer + 1;
             --if (pcWriteEnableSignal = '1') then
             --    pcWriteEnableSignal <= '0';
             --end if;
@@ -741,7 +742,7 @@ begin
                     end if;
 
                 elsif(pcWriteEnableV = '1') then --jumps
-            
+                    report "Kolo raye7";
                     q <= (others => (others => '0'));
                     readPointer <= (others => '0');
                     writePointer <= (others => '0');
@@ -758,7 +759,7 @@ begin
             l := to_integer(unsigned(readPointer));
             r := to_integer(unsigned(writePointer));
 
-            while( ROBEmptySignal = '0' ) loop
+            while( ROBEmptySignal = '0' and pcWriteEnableV = '0') loop
 
                 loopEntry := q(r);
 
@@ -777,7 +778,7 @@ begin
                             );
 
                 q(r) <= loopEntry;
-                
+
                 if(destRegisterGotValueV) then 
                   if(registerState(to_integer(unsigned(destRegisterV))) = INEXECUTE
                      and waitingROB(to_integer(unsigned(destRegisterV))) = std_logic_vector(to_unsigned(r,4))) then 

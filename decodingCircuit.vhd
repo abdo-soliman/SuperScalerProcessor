@@ -128,8 +128,8 @@ architecture rtl of decodingCircuit is
                         valueSrc2 := (others => '0');
                         validSrc2 := '0';
                         destTag := (others => '0');
-                        robInstruction(1 downto 0) <= (others => '1');
-                    elsif (opcode = IN_OPCODE) then
+                        robInstruction(1 downto 0) <= (others => '1'); --set done bit
+                    elsif (opcode = IN_OPCODE) then --remember adding value at decode stage
                         valueSrc1 := (others => '0');
                         validSrc1 := '0';
                     end if;

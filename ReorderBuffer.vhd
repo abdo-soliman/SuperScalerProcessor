@@ -24,6 +24,7 @@ entity ReorderBuffer is
        	---------------------------------------------------------------------
         reset:			in      	std_logic := '0';
         clk:			in      	std_logic := '0';
+        inPort:         in          std_logic_vector(15 downto 0) := (others => '0');
         ROBFull:		out 		std_logic := '0';
         --ROBEmpty:		out 		std_logic := '0';
         pcWriteOut:        out         std_logic := '0';
@@ -43,7 +44,13 @@ entity ReorderBuffer is
         lastStoreValid:         out        std_logic := '0';
         ------------------------------------------------------------------------
         --Decoding signals out
-        outputRS: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
+        firstSourceRegister:          out        std_logic_vector(2 downto 0) := (others => '0');
+        secondSourceRegister:         out        std_logic_vector(2 downto 0) := (others => '0');
+        firstSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
+        secondSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
+        outputRS: 		out     	std_logic_vector(width-1 downto 0) := (others => '0');
+        memIn:          in                   std_logic_vector(15 downto 0)
+        --------------------------------------------------------------------------------
 
     );
 end entity ReorderBuffer;
@@ -73,15 +80,27 @@ architecture rtl of ReorderBuffer is
     signal lastStoreSignal:              std_logic_vector(3 downto 0) := (others => '0');
     signal lastStoreValidSignal:         std_logic := '0';
 
+    ----------------------------------------------------------------------------
+    --Decoding circuit
+    signal firstSourceValueDecoded:           std_logic_vector(15 downto 0) := (others => '0');
+    signal secondSourceValueDecoded:           std_logic_vector(15 downto 0) := (others => '0');
     signal ROBEntry:                     std_logic_vector(width-1 downto 0);
+    signal firstSourceInt:                        integer := 0;
+    signal secondSourceInt:                       integer := 0;
+    signal valueValidDecoded:                   std_logic := '0';
 
+
+
+    ----------------------------------------------------------------------------
     type STATE_TYPE is (AVAILABLE, INEXECUTE, FLIGHT);  -- Define the states
     type REGISTER_STATE is array(0 to 7) of STATE_TYPE;
     type WAITING_ROB is array(0 to 7) of std_logic_vector(3 downto 0);
 
     signal registerState:   REGISTER_STATE := (others => AVAILABLE);
     signal waitingROB:      WAITING_ROB := (others => (others => '0'));
-
+    --------------------------------------------------------------------------------
+    type rType is array(0 to 7) of std_logic_vector(15 downto 0);
+    signal tempRegisters:       rType := (others => (others => '0'));
 
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
@@ -345,7 +364,7 @@ architecture rtl of ReorderBuffer is
     procedure commitInstruction(variable    entry:                  inout   std_logic_vector(width-1 downto 0);
                                 variable    destRegister:           out     std_logic_vector(2 downto 0);
                                 variable    registerWriteEnable:    out     std_logic;
-                                signal      outputValue:            out     std_logic_vector(15 downto 0);
+                                variable      outputValue:            out     std_logic_vector(15 downto 0);
                                 signal      address:                out     std_logic_vector(15 downto 0);
                                 signal      pcOutValue:             out     std_logic_vector(15 downto 0);
                                 variable    memoryWriteEnable:      out     std_logic;
@@ -354,10 +373,11 @@ architecture rtl of ReorderBuffer is
                                 variable    pcWriteEnable:          out     std_logic;
                                 variable    isPush:                 out     std_logic;
                                 variable    isPop:                  out     std_logic;
+                                variable    commitPop:              out     std_logic;
                                 variable    isStore:                out     std_logic;
                                 variable    flags:                  out     std_logic_vector(2 downto 0);
                                 variable    commited:               out     boolean) is
-    
+                    
     variable entryOpCode: std_logic_vector(4 downto 0);
 
     begin
@@ -369,6 +389,7 @@ architecture rtl of ReorderBuffer is
         pcWriteEnable := '0';
         isPush := '0';
         isPop := '0';
+        commitPop := '0';
         isStore := '0';
         portReadEnable := '0';
         commited := false;
@@ -377,18 +398,21 @@ architecture rtl of ReorderBuffer is
             --Memory instructions
 
             if (entryOpCode = POP_OPCODE) then
-                if (ValueValid(entry) = '1') then 
+                if(Done(entry) = '1')then
                     commited := true;
                     destRegister := DestinationRegister(entry);
                     registerWriteEnable := '1';
+                    commitPop := '1';
+                elsif (ValueValid(entry) = '1') then 
                     isPop := '1';
+                    entry(1) := '0';
                 end if;
 
             elsif (entryOpCode = PUSH_OPCODE) then
 
                 if (ValueValid(entry) = '1') then
                     commited := true;
-                    outputValue <= Value(entry);
+                    outputValue := Value(entry);
                     isPush := '1';
                 end if;
 
@@ -399,7 +423,7 @@ architecture rtl of ReorderBuffer is
                     commited := true;
                     pcWriteEnable := '1';
 
-                    outputValue <= Value(entry); --old pc in value
+                    outputValue := Value(entry); --old pc in value
 
                     pcOutValue <= DestinationAddress(entry);
 
@@ -414,7 +438,7 @@ architecture rtl of ReorderBuffer is
                     
                     memoryWriteEnable := '1';
                     address <= DestinationAddress(entry);
-                    outputValue <= Value(entry);
+                    outputValue := Value(entry);
                     isStore := '1';
                     commited := true;
 
@@ -460,14 +484,14 @@ architecture rtl of ReorderBuffer is
         elsif (entryOpCode = OUT_OPCODE) then
             if(ValueValid(entry) = '1') then 
                 commited := true;
-                outputValue <= Value(entry);
+                outputValue := Value(entry);
                 portWriteEnable := '1';
             end if;
 
         else  --Commit to register
             if(ValueValid(entry) = '1') then 
                 commited := true;
-                outputValue <= Value(entry);
+                outputValue := Value(entry);
                 registerWriteEnable := '1';
                 destRegister := DestinationRegister(entry);
             end if;
@@ -538,13 +562,29 @@ begin
 
     ----------------------------------------------------------------------------
     --Decoding
+    firstSourceRegister <= instruction(26 downto 24);
+    secondSourceRegister <= instruction(23 downto 21);
 
-    --NOP
+    firstSourceInt <= to_integer(unsigned(instruction(26 downto 24)));
+    secondSourceInt <= to_integer(unsigned(instruction(23 downto 21)));
+
+    firstSourceValueDecoded <= firstSourceValue when registerState(firstSourceInt) = AVAILABLE
+                            else q(to_integer(unsigned(waitingROB(firstSourceInt))))(42 downto 27) when registerState(firstSourceInt) = FLIGHT
+                            else waitingROB(firstSourceInt) & (11 downto 0 => '0') when registerState(firstSourceInt) = INEXECUTE;
+
+
+    secondSourceValueDecoded <= secondSourceValue when registerState(secondSourceInt) = AVAILABLE
+                            else q(to_integer(unsigned(waitingROB(secondSourceInt))))(42 downto 27) when registerState(secondSourceInt) = FLIGHT
+                            else waitingROB(secondSourceInt) & (11 downto 0 => '0') when registerState(secondSourceInt) = INEXECUTE;
+
+
+    ----NOP
     --ROBEntry(48) <= '1'
     ----Opcode
     --ROBEntry(47 downto 43) <= instruction(31 downto 27);
     ----Value bit
-    --ROBEntry(42 downto 27) <= () when 
+    --ROBEntry(42 downto 27) <= inPort when instruction(31 downto 27) = IN_OPCODE
+    --                    else  
 
 
     ----------------------------------------------------------------------------
@@ -620,11 +660,11 @@ begin
         variable    portReadEnableV:              std_logic;
         variable    isPushV:                      std_logic;
         variable    isPopV:                       std_logic;
+        variable    commitPopV:                    std_logic;
         variable    isStoreV:                     std_logic;
         variable    commitedV:                    boolean;
         variable    inp:                          std_logic_vector(width-1 downto 0);
         variable    flags:                        std_logic_vector(2 downto 0);
-
         variable    loopEntry:                    std_logic_vector(width-1 downto 0);
         variable    l:                            integer;
         variable    r:                            integer;
@@ -695,7 +735,7 @@ begin
                     inp,
                     destinationRegisterV,
                     registerWriteEnableV,
-                    outputValueSignal,
+                    outputValueV,
                     addressOut,
                     pcValueOut,
                     memoryWriteEnableV,
@@ -704,11 +744,12 @@ begin
                     pcWriteEnableV,
                     isPushV,
                     isPopV,
+                    commitPopV,
                     isStoreV,
                     flags,
                     commitedV
                     );
-
+                outputValueSignal <= outputValueV;
                 destRegisterOut <= destinationRegisterV;
                 registerWriteEnableSignal <= registerWriteEnableV;
                 memoryWriteEnableSignal <= memoryWriteEnableV;
@@ -726,13 +767,25 @@ begin
                 end if;
 
                 if (commitedV and registerWriteEnableV = '1') then 
+                    --TODO add RF Adapter
+                    if (commitPopV = '1')then
+                        tempRegisters(to_integer(unsigned(destRegisterV))) <= memIn;
+                        if (registerState(to_integer(unsigned(destinationRegisterV))) = INEXECUTE
+                            and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
 
-                    if (registerState(to_integer(unsigned(destinationRegisterV))) = FLIGHT
-                        and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
+                                registerState(to_integer(unsigned(destinationRegisterV))) <= AVAILABLE;
 
-                            registerState(to_integer(unsigned(destinationRegisterV))) <= AVAILABLE;
+                        end if;
+                    elsif(isPopV = '0')then
+                        tempRegisters(to_integer(unsigned(destRegisterV))) <= outputValueV;
+                        if (registerState(to_integer(unsigned(destinationRegisterV))) = FLIGHT
+                            and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
 
+                                registerState(to_integer(unsigned(destinationRegisterV))) <= AVAILABLE;
+
+                        end if;
                     end if;
+                    
 
 
 

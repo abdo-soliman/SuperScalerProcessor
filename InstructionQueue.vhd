@@ -12,11 +12,12 @@ entity InstructionQueue is
     port (
         input:  		in      	std_logic_vector(width-1 downto 0) := (others => '0');
         enable: 		in      	std_logic := '1'; --if ROB full don't enable
+        mode:           in          std_logic := '0';
         reset:  		in      	std_logic := '0';
         clk:    		in      	std_logic := '0';
         queueFull:		out 		std_logic := '0';
         numberOfElementes:  out     std_logic_vector(3 downto 0) := (others => '0');
-        output: 		out     	std_logic_vector(widthByTwo-1 downto 0) := (others => '0')
+        output: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
     );
 end entity InstructionQueue;
 
@@ -29,11 +30,8 @@ architecture rtl of InstructionQueue is
 	
 	
 begin
-    output <= q(0);
-    --queueFullSignal <= '1' when (tail = "1000" or tail = "0111")
-    				--else '0';
-    queueFull <= '0' when ((queueFullSignal = '0') or ((enable = '1') and (tail = "0111")))
-    		else '1';
+    output <= q(0)&q(1);
+    queueFull <= queueFullSignal;
 
     numberOfElementes <= tail;
     process(clk,reset)
@@ -43,18 +41,37 @@ begin
         	tail <= (others=> '0');
         elsif (clk'event and clk = '1') then --shift and output to ROB, ROB reads in negative edge
         	if(enable = '1') then
-        		q(length-1) <= (others => '0');
-	        	--Shifting
-	        	for i in length-2 downto 0 loop
-	        		q(i) <= q(i + 1);
-	        	end loop;
 
-	        	if (tail /= "0000") then
-	        		tail <= tail - 1;
-	        		if (tail = "0111") then
-	        			queueFullSignal <= '0';
-	        		end if;
-	        	end if;
+                if (mode = '0') then --shift by one
+
+                    q(length-1) <= (others => '0');
+                	--Shifting
+                	for i in length-2 downto 0 loop
+                		q(i) <= q(i + 1);
+                	end loop;
+
+                	if (tail /= "0000") then
+                		tail <= tail - 1;
+                		if (tail = "0111") then
+                			queueFullSignal <= '0';
+                		end if;
+                	end if;
+
+                else  --Shifting by two
+                    report "Are you alive?";
+                    q(length-1) <= (others => '0');
+                    q(length-2) <= (others => '0');
+
+                    --Shifting by two
+                    for i in length-3 downto 0 loop
+                        q(i) <= q(i + 2);
+                    end loop;
+
+                    tail <= tail - 2;    
+                    queueFullSignal <= '0';
+                        
+                end if;
+                
        		end if;	
     	elsif (clk'event and clk = '0') then 
         	if(queueFullSignal = '0') then 

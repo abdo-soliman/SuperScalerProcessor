@@ -40,7 +40,8 @@ architecture rtl of CPU is
 	signal ROBFull:				std_logic := '0';
 	signal ROBEmpty:			std_logic := '0';
 
-	signal instQueueOut:		std_logic_vector(15 downto 0) := (others => '0');
+	signal instQueueOut:		std_logic_vector(31 downto 0) := (others => '0');
+	signal instQueueMode:		std_logic := '0';
 
 	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
 
@@ -64,7 +65,7 @@ architecture rtl of CPU is
 	signal ALUtagValid:				std_logic := '0';
 
 	signal flags:					std_logic_vector(2 downto 0) := (others => '0');
-
+	signal flagsOut:				std_logic_vector(2 downto 0) := (others => '0');
 
 
 
@@ -121,6 +122,7 @@ begin
 	port map (
         input => ramOut,      	
         enable => ROBEnableQueue,
+        mode => instQueueMode,
         reset => instQueueReset,
         clk => clk,
         queueFull => queueFull,
@@ -160,7 +162,7 @@ begin
         memoryTag => dataMEMtag,
         aluTagValid => ALUtagValid,
         memoryTagValid => dataMEMtagValid,
-        flags => flags,
+        flagsIn => flags,
 
         reset => reset,
         clk => clk,
@@ -177,6 +179,7 @@ begin
         portReadEnableOut => ROBportReadEnable,
         isPushOut => ROBisPush,
         isPopOut => ROBisPop,
+        flagsOut => flagsOut,
         outputRS => ROBOutToRS
     );
 		

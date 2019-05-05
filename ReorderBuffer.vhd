@@ -12,14 +12,14 @@ entity ReorderBuffer is
     		 width: integer  := 49 
     		 );
     port (
-        instruction:	in      	std_logic_vector(15 downto 0) := (others => '0');
+        instruction:	in      	std_logic_vector(31 downto 0) := (others => '0');
         aluValue:       in          std_logic_vector(15 downto 0) := (others => '0');
         aluTag:        in          std_logic_vector(3 downto 0) := (others => '0');
         mememoryValue:  in          std_logic_vector(15 downto 0) := (others => '0');
         memoryTag:     in          std_logic_vector(3 downto 0) := (others => '0');
         aluTagValid:    in          std_logic := '0';
         memoryTagValid: in          std_logic := '0';
-        flags:          in          std_logic_vector(2 downto 0) := (others => '0'); 
+        flagsIn:          in          std_logic_vector(2 downto 0) := (others => '0'); 
         --memory and alu tags from the CBD
        	---------------------------------------------------------------------
         reset:			in      	std_logic := '0';
@@ -37,11 +37,12 @@ entity ReorderBuffer is
         portReadEnableOut:      out        std_logic := '0';
         isPushOut:              out        std_logic := '0';
         isPopOut:               out        std_logic := '0';
+        flagsOut:               out        std_logic_vector (2 downto 0) := (others => '0');
         --may be removed when decoding circuit is in @Ahmed
         lastStore:              out        std_logic_vector(3 downto 0) := (others => '0'); 
         lastStoreValid:         out        std_logic := '0';
         ------------------------------------------------------------------------
-        
+        --Decoding signals out
         outputRS: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
 
     );
@@ -72,12 +73,16 @@ architecture rtl of ReorderBuffer is
     signal lastStoreSignal:              std_logic_vector(3 downto 0) := (others => '0');
     signal lastStoreValidSignal:         std_logic := '0';
 
+    signal ROBEntry:                     std_logic_vector(width-1 downto 0);
+
     type STATE_TYPE is (AVAILABLE, INEXECUTE, FLIGHT);  -- Define the states
     type REGISTER_STATE is array(0 to 7) of STATE_TYPE;
     type WAITING_ROB is array(0 to 7) of std_logic_vector(3 downto 0);
 
     signal registerState:   REGISTER_STATE := (others => AVAILABLE);
     signal waitingROB:      WAITING_ROB := (others => (others => '0'));
+
+
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(15 downto 0);
@@ -135,11 +140,12 @@ architecture rtl of ReorderBuffer is
                 end if;
             end if;
             
-            if (isJmpFamily(OPcode)) then
+            if (isTypeThree(OPcode)) then
 
                 if(Execute(entry) = '0' and aluTagInt = WaitingTag(entry) and aluTagValid = '1') then
 
                     entry(2) := '1';
+                    entry(6 downto 4) := flags;
                     --Done is decision of jump
                     --If 1, jmp is taken, 
                     --else untaken
@@ -284,7 +290,7 @@ architecture rtl of ReorderBuffer is
             lastStore := writePointer;
             lastStoreValid := '1';
 
-        elsif(isJMPFamily(entryOpCode)) then --case jump
+        elsif(isTypeThree(loopOpCode)) then --case jumps
 
             l := to_integer(unsigned(readPointer));
             r := to_integer(unsigned(writePointer));
@@ -295,28 +301,12 @@ architecture rtl of ReorderBuffer is
 
                 loopOpCode := getOpCode(entry => q(r) );
 
-                if (entryOpCode = JC_OPCODE) then 
+                if (Done(q(r)) = '0' and affectsFlags(loopOpCode) ) then
 
-                    if (Done(q(r)) = '0' and (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode) or
-                        loopOpCode = SETC_OPCODE or loopOpCode = CLC_OPCODE)) then
-
-                        entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
-                        entry(2) := '0'; --Execute/wait bit is not valid    
-                        temp := 1;
-                        exit;
-
-                    end if;
-
-                else 
-                    if (Done(q(r)) = '0' and (isArithmeticFamily(loopOpCode) or isShiftFamily(loopOpCode)
-                        or isLogicalFamily(loopOpCode)) ) then
-
-                        entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
-                        entry(2) := '0'; --Execute/wait bit is not valid    
-                        temp := 1;
-                        exit;
-
-                    end if;
+                    entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                    entry(2) := '0'; --Execute/wait bit is not valid    
+                    temp := 1;
+                    exit;   
 
                 end if;
 
@@ -333,7 +323,9 @@ architecture rtl of ReorderBuffer is
             end loop;
 
             if (temp = 0) then 
-               
+                
+                entry(6 downto 4) := flags;
+
                 if(entryOpCode = JC_OPCODE and isCarrySet(flags)) then 
                     entry(1) := '1'; --Done bit
                 elsif (entryOpCode = JZ_OPCODE and isZeroSet(flags)) then
@@ -363,6 +355,7 @@ architecture rtl of ReorderBuffer is
                                 variable    isPush:                 out     std_logic;
                                 variable    isPop:                  out     std_logic;
                                 variable    isStore:                out     std_logic;
+                                variable    flags:                  out     std_logic_vector(2 downto 0);
                                 variable    commited:               out     boolean) is
     
     variable entryOpCode: std_logic_vector(4 downto 0);
@@ -543,6 +536,18 @@ begin
     isPushOut <= isPushSignal;
     isPopOut <= isPopSignal;
 
+    ----------------------------------------------------------------------------
+    --Decoding
+
+    --NOP
+    --ROBEntry(48) <= '1'
+    ----Opcode
+    --ROBEntry(47 downto 43) <= instruction(31 downto 27);
+    ----Value bit
+    --ROBEntry(42 downto 27) <= () when 
+
+
+    ----------------------------------------------------------------------------
     --process(clk,reset)
     --variable l: integer;
     --variable r: integer;
@@ -618,6 +623,7 @@ begin
         variable    isStoreV:                     std_logic;
         variable    commitedV:                    boolean;
         variable    inp:                          std_logic_vector(width-1 downto 0);
+        variable    flags:                        std_logic_vector(2 downto 0);
 
         variable    loopEntry:                    std_logic_vector(width-1 downto 0);
         variable    l:                            integer;
@@ -699,6 +705,7 @@ begin
                     isPushV,
                     isPopV,
                     isStoreV,
+                    flags,
                     commitedV
                     );
 
@@ -710,6 +717,7 @@ begin
                 portReadEnableOut <= portReadEnableV;
                 isPushSignal <= isPushV;
                 isPopSignal <= isPopV;
+                flagsOut <= flags;
 
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
@@ -772,7 +780,7 @@ begin
                             aluTagValid => aluTagValid,
                             index => r,
                             memoryTagValid => memoryTagValid,
-                            flags => flags,
+                            flags => flagsIn,
                             destRegister => destRegisterV,
                             destRegisterGotValue => destRegisterGotValueV
                             );

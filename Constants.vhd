@@ -94,6 +94,8 @@ function isArithmeticFamily(opCode:   std_logic_vector(4 downto 0)) return boole
 function isLogicalFamily(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
 function isShiftFamily(opCode:   std_logic_vector(4 downto 0)) return boolean;
+--------------------------------------------------------------------------------
+function affectsFlags(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
 function isLoad(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
@@ -102,6 +104,8 @@ function isStore(opCode:   std_logic_vector(4 downto 0)) return boolean;
 function isTypeOne(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
 function isTypeZero(opCode:   std_logic_vector(4 downto 0)) return boolean;
+----------------------------------------------------------------------------
+function isTypeThree(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
 function isLoopFamily(opCode:   std_logic_vector(4 downto 0)) return boolean;
 --------------------------------------------------------------------------------
@@ -191,7 +195,7 @@ begin
     end if;
 
 end isZeroSet;
-    ----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 function isNegativeSet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
                     return  boolean is
 begin
@@ -202,7 +206,7 @@ begin
     end if;
     
 end isNegativeSet;
-    ----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 function isCarrySet(flags : std_logic_vector(2 downto 0) := (others => '0'))    
                     return  boolean is
 begin
@@ -213,6 +217,7 @@ begin
     end if;
     
 end isCarrySet;
+
 ----------------------------------------------------------------------------
 procedure setDone(signal entry:    inout   std_logic_vector(CONST_WIDTH-1 downto 0);
                signal OPcode:   in      std_logic_vector(4 downto 0);
@@ -277,6 +282,17 @@ begin
     end if;
 end isShiftFamily;
 ----------------------------------------------------------------------------
+function affectsFlags(opCode:   std_logic_vector(4 downto 0))
+                            return boolean is
+begin
+    if(isArithmeticFamily(opCode) or isShiftFamily(opCode) or isLogicalFamily(opCode) or
+       opCode = SETC_OPCODE or opCode = CLC_OPCODE) then
+        return true;
+    else
+        return false;
+    end if;
+end affectsFlags;
+----------------------------------------------------------------------------
 function isLoad(opCode:   std_logic_vector(4 downto 0))
                             return boolean is
 begin
@@ -320,6 +336,19 @@ begin
         return false;
     end if;
 end isTypeZero;
+----------------------------------------------------------------------------
+function isTypeThree(opCode:   std_logic_vector(4 downto 0))
+                            return boolean is
+begin
+    if( isJMPFamily(opCode) or opCode = JMP_OPCODE or 
+        opCode = CALL_OPCODE or opCode = RET_OPCODE or 
+        opCode = RTI_OPCODE) then
+        return true;
+    else
+        return false;
+    end if;
+end isTypeThree;
+----------------------------------------------------------------------------
 ----------------------------------------------------------------------------
 function isLoopFamily(opCode:   std_logic_vector(4 downto 0))
                             return boolean is

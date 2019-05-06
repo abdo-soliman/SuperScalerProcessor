@@ -51,7 +51,8 @@ entity ReorderBuffer is
         secondSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
         instQueueShiftEnable:           out        std_logic := '0';
         instQueueShiftMode:           out        std_logic := '0';
-        outputRS: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
+        instructionToALU: 		    out     	std_logic_vector(41 downto 0) := (others => '0');
+        ALUissue:                   out         std_logic := '0'
         --------------------------------------------------------------------------------
 
     );
@@ -91,8 +92,8 @@ architecture rtl of ReorderBuffer is
     signal secondSourceInt:                       integer := 0;
     signal valueValidDecoded:                   std_logic := '0';
 
-    signal ROBentryToBeWritten:                   std_logic_vector(width-1 downto 0) := (others => '0');
-    signal RSentryToBeWritten:                    std_logic_vector(width-1 downto 0) := (others => '0');
+    signal ROBentryToBeWritten:                    std_logic_vector(width-1 downto 0) := (others => '0');
+    signal ALUentryToBeWritten:                    std_logic_vector(41 downto 0) := (others => '0');
 
     ----------------------------------------------------------------------------
     type STATE_TYPE is (AVAILABLE, INEXECUTE, FLIGHT);  -- Define the states
@@ -542,8 +543,9 @@ architecture rtl of ReorderBuffer is
 
     end resolveLoad;
     ----------------------------------------------------------------------------
+    signal fakes:           std_logic := '0';
 begin
-    outputRS <= q(to_integer(unsigned(readPointer)));
+    --outputRS <= q(to_integer(unsigned(readPointer)));
     opCodeSignal <= getOpCode(q(to_integer(unsigned(readPointer))));
     --ROBFullSignal <= '1' when tail = head
     --				else '0';
@@ -652,6 +654,7 @@ begin
     --  	end if;
     --end process;
     
+
     process (clk,reset,instQueueWritten)
         variable    destinationRegisterV:         std_logic_vector(2 downto 0);
         variable    registerWriteEnableV:         std_logic;
@@ -714,6 +717,8 @@ begin
             writePointer <= writePointer + 1;
 
         elsif (clk'event and clk = '0') then
+            ALUissue <= '0';
+
             registerWriteEnableV := '0';
             memoryWriteEnableV := '0';
             portWriteEnableV := '0';
@@ -868,27 +873,34 @@ begin
                 end if;
 
             end loop;
-        end if;
+        --end if;
 
         --------------------------------------------------------------------
         --Decoding
-        if(instQueueWritten'event and instQueueWritten = '1') then
+        elsif(fakes = '1' and instQueueWritten'event and instQueueWritten = '1') then
 
             --May god be with you;
             report "Ramadan Kareem";
 
             ROBentryToBeWritten <= (others => '0');
 
-            ROBentryToBeWritten(47 downto 43) <= instruction(15+16 downto 11+16);
+            ROBentryToBeWritten(47 downto 43) <= "01000";
 
-            ROBentryToBeWritten(42 downto 27) <= inPort;
+            ROBentryToBeWritten(9 downto 7) <= "001";
 
-            ROBentryToBeWritten(9 downto 7) <= instruction(10+16 downto 8+16);
+            ALUentryToBeWritten <= (others => '0');
 
+            --ALUentryToBeWritten()
+            instructionToALU <= "010000000000000000001100010000000000011001";
+
+            ALUissue <= '1';
 
 
         end if;
         --------------------------------------------------------------------
+        if(reset = '0') then 
+            fakes <= '1';
+        end if;
     end process;
     
 end architecture rtl;

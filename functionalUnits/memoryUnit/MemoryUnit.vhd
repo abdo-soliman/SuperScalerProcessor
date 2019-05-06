@@ -22,8 +22,7 @@ architecture rtl of MemoryUnit is
     signal invClk:  std_logic;
 
     begin
-        invClk <= not clk;
-        
+
         ram: entity work.DataRam
         port map (
             clk             => invClk,
@@ -34,9 +33,10 @@ architecture rtl of MemoryUnit is
         );
 
         currentAddress <= address when mode(1) = '0' else sp + 1 when mode = "11" else sp;
+        invClk <= not clk;
+        
         process (clk, mode, address, enable)
         begin
-            invClk <= not clk;
 
             if (enable = '1') then
                 if (mode = "00") then   -- load

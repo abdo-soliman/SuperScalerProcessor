@@ -9,26 +9,28 @@ entity arithmaticUnitIntegration is
         clk:                            in std_logic;
         issue:                          in std_logic;
         reset:                          in std_logic;
+        setFlags:                       in std_logic;
+        robFlags:                       in std_logic_vector(2 downto 0);
         instruction:                    in std_logic_vector(41 downto 0);
-        lastExcutedAluDestName:         inout std_logic_vector(2 downto 0);
-        lastExcutedAluDestNameValue:    inout std_logic_vector(15 downto 0);
+        lastExcutedAluDestName:         inout std_logic_vector(2 downto 0) := (others => '0');
+        lastExcutedAluDestNameValue:    inout std_logic_vector(15 downto 0) := (others => '0');
         lastExcutedMemDestName:         in std_logic_vector(2 downto 0);
         lastExcutedMemDestNameValue:    in std_logic_vector(15 downto 0);
-        destTag:                        inout std_logic_vector(2 downto 0);
-        validAlu:                       inout std_logic;
+        validAlu:                       inout std_logic := '0';
         validMem:                       in std_logic;
-        dataOut:                        out std_logic_vector(15 downto 0);
+        flags:                          out std_logic_vector(2 downto 0);
         full:                           out std_logic
     );
 end entity;
 
 architecture rtl of arithmaticUnitIntegration is
-    signal aluOp:       std_logic_vector(4 downto 0);
-    signal op1:         std_logic_vector(15 downto 0);
-    signal op2:         std_logic_vector(15 downto 0);
-    signal zero:        std_logic;
-    signal negative:    std_logic;
-    signal carry:       std_logic;
+    signal aluOp:           std_logic_vector(4 downto 0);
+    signal op1:             std_logic_vector(15 downto 0);
+    signal op2:             std_logic_vector(15 downto 0);
+    signal flagsEnable:     std_logic;
+    signal inFlags:         std_logic_vector(2 downto 0);
+    signal outFlags:        std_logic_vector(2 downto 0);
+    signal currentFlags:    std_logic_vector(2 downto 0);
 
     signal tempLastExcutedAluDestNameValue: std_logic_vector(15 downto 0);
     begin
@@ -40,12 +42,12 @@ architecture rtl of arithmaticUnitIntegration is
                 reset                       => reset,
                 validAlu                    => validAlu,
                 validMem                    => validMem,
-                opcode                      => instruction( downto ),
-                tag1                        => instruction( downto ),
-                tag2                        => instruction( downto ),
-                valid1                      => instruction( downto ),
-                valid2                      => instruction( downto ),
-                issueDestName               => instruction( downto ),
+                opcode                      => instruction(41 downto 37),
+                tag1                        => instruction(36 downto 21),
+                tag2                        => instruction(19 downto 4),
+                valid1                      => instruction(20),
+                valid2                      => instruction(3),
+                issueDestName               => instruction(2 downto 0),
                 lastExcutedAluDestName      => lastExcutedAluDestName,
                 lastExcutedAluDestNameValue => lastExcutedAluDestNameValue,
                 lastExcutedMemDestName      => lastExcutedMemDestName,
@@ -58,26 +60,33 @@ architecture rtl of arithmaticUnitIntegration is
             );
 
         alu: entity work.alu
+            generic map (n => 16)
             port map (
-                s:          => aluOp,
-                a:          => op1,
-                b:          => op2,
-                cin:        => '0',
-                f:          => tempLastExcutedAluDestNameValue,
-                cout:       => carry,
-                zero:       => zero,
-                negative    => negative
+                s           => aluOp,
+                a           => op1,
+                b           => op2,
+                cin         => '0',
+                f           => tempLastExcutedAluDestNameValue,
+                cout        => currentFlags(2),
+                negative    => currentFlags(1),
+                zero        => currentFlags(0)
             );
 
         flagsRegister: entity work.mRegister
 			generic map (n => 3)
 			port map (
-				input	=> zero & negative & carry,
-				enable	=> srcRegTagEnable1,
+				input	=> inFlags,
+				enable	=> flagsEnable,
 				clk		=> clk,
 				reset	=> reset,
-				output	=> srcRegTagOutput1
+				output	=> outFlags
 			);
 
+        flagsEnable <= '1' when validAlu = '1' or setFlags = '1' else  '0';
+        inFlags <= outFlags(2) & currentFlags(1 downto 0) when (validAlu = '1' and  (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))else
+            currentFlags when (validAlu = '1' and (not (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))) else
+            robFlags when setFlags = '1' else "000";
+        flags(2) <= outFlags(2) when (validAlu = '0' or aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE) else currentFlags(2);
+        flags(1 downto 0) <= currentFlags(1 downto 0) when validAlu = '1' else outFlags(1 downto 0);
         lastExcutedAluDestNameValue <= tempLastExcutedAluDestNameValue when validAlu = '1';
 end rtl;

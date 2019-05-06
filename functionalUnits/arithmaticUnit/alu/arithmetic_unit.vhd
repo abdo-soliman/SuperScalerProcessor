@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity arithmetic_unit is
-    generic (n : natural := 8);
+    generic (n : natural := 16);
     port (
         s:      in std_logic_vector(2 downto 0);
         a:      in std_logic_vector(n-1 downto 0);

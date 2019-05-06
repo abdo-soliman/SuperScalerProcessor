@@ -50,9 +50,11 @@ architecture rtl of CPU is
 	signal issueLoadBuffers:	std_logic := '0';
 	--For testing --------------------------------------------------------------
 	signal ramOut:				std_logic_vector(31 downto 0) := (others => '0');
+
+	signal ROBsetFlags:			std_logic := '0';
 	signal ROBOutToRS:			std_logic_vector(48 downto 0) := (others => '0'); --length may be changed @Ahmed
 	signal ROBdecodedTag:		std_logic_vector(2 downto 0)  :=  (others => '0');
-	signal loadBuffersIn:		std_logic_vector(28 downto 0) :=  (others => '0');
+	signal loadBuffersInstructionIn:		std_logic_vector(28 downto 0) :=  (others => '0');
 	----------------------------------------------------------------------------
 	signal flush:		std_logic := '0';
 
@@ -63,15 +65,17 @@ architecture rtl of CPU is
 	signal dataMEMout:				std_logic_vector(15 downto 0) := (others => '0');
 	signal dataMEMtag:				std_logic_vector(2 downto 0) := (others => '0');
 	signal dataMEMtagValid:			std_logic := '0';
-	
+	signal dataMEMinternalValid:	std_logic := '0'; --don't ever use it in ROB
 
+	signal ALUinstructionIn:		std_logic_vector(41 downto 0) := (others => '0');
+	signal ALUissue:				std_logic := '0';
 	signal ALUout:					std_logic_vector(15 downto 0) := (others => '0');
 	signal ALUtag:					std_logic_vector(2 downto 0) := (others => '0');
 	signal ALUtagValid:				std_logic := '0';
+	signal ALUfull:					std_logic := '0';
 
 	signal flags:					std_logic_vector(2 downto 0) := (others => '0');
-	signal flagsOut:				std_logic_vector(2 downto 0) := (others => '0');
-
+	signal ROBflagsOut:				std_logic_vector(2 downto 0) := (others => '0');
 
 
 begin
@@ -163,7 +167,7 @@ begin
     	robTag => ROBdecodedTag, --will be output of decoding
     	robAddress => ROBOutputAddress, --some signal from ROB
     	robValue => ROBOutputValue,
-    	instruction => loadBuffersIn, --from decoded circuit
+    	instruction => loadBuffersInstructionIn, --from decoded circuit
     	lastExcutedAluDestName => ALUTag,
     	lastExcutedAluDestNameValue => ALUout,
     	lastExcutedMemDestName => dataMEMtag,
@@ -172,6 +176,26 @@ begin
     	validMemRob => dataMEMtagValid,
     	full => loadBuffersFull
     );
+
+    arithUnit: entity work.arithmaticUnitIntegration 
+	port map (
+		clk => clk,
+        issue => ALUissue,
+        reset => flush,
+        setFlags => ROBwritePC, 
+        robFlags => ROBflagsOut, --start from here, make signals
+        instruction => ALUinstructionIn,
+        lastExcutedAluDestName => ALUtag,
+        lastExcutedAluDestNameValue => ALUout,
+        lastExcutedMemDestName => dataMEMtag,
+        lastExcutedMemDestNameValue => dataMEMout,
+        validAlu => AluTagValid,
+        validMem => dataMEMtagValid,
+        flags => flags,
+        full => ALUfull
+	);
+
+
 
     rob: entity work.ReorderBuffer --Not all signals are connected to ROB
 	port map(
@@ -200,8 +224,10 @@ begin
         portReadEnableOut => ROBportReadEnable,
         isPushOut => ROBisPush,
         isPopOut => ROBisPop,
-        flagsOut => flagsOut,
-        outputRS => ROBOutToRS
+        flagsOut => ROBflagsOut,
+        instructionToALU => ALUinstructionIn,
+        ALUissue => ALUissue
+
     );
 		
 	

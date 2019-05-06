@@ -11,7 +11,6 @@ sim:/arithmaticunitintegration/lastExcutedAluDestName \
 sim:/arithmaticunitintegration/lastExcutedAluDestNameValue \
 sim:/arithmaticunitintegration/lastExcutedMemDestName \
 sim:/arithmaticunitintegration/lastExcutedMemDestNameValue \
-sim:/arithmaticunitintegration/tempValidAlu \
 sim:/arithmaticunitintegration/flagsEnable \
 sim:/arithmaticunitintegration/inFlags \
 sim:/arithmaticunitintegration/outFlags \
@@ -46,10 +45,13 @@ run
 run
 run
 force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestName 2#001 0
-force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestNameValue 16#0011 0
+force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestNameValue 16#FFFF 0
 force -freeze sim:/arithmaticunitintegration/validMem 2#1 0
 run
 force -freeze sim:/arithmaticunitintegration/validMem 2#0 0
+force -freeze sim:/arithmaticunitintegration/issue 2#1 0
+force -freeze sim:/arithmaticunitintegration/instruction 16#1402031010C 0
 run
+force -freeze sim:/arithmaticunitintegration/issue 2#0 0
 run
 run

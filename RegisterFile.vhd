@@ -13,10 +13,12 @@ entity registerFile is
     generic ( n : integer := 16);
     port (
         dataIn:                 in          std_logic_vector(n-1 downto 0) := (others => '0'); 
-        dataOut:                out         std_logic_vector(n-1 downto 0) := (others => '0');
+        firstDataOut:           out         std_logic_vector(n-1 downto 0) := (others => '0');
+        secondDataOut:          out         std_logic_vector(n-1 downto 0) := (others => '0');
         clk:                    in      	std_logic := '1'; 
         reset:                  in          std_logic := '0';
-        readRegister:           in          std_logic_vector(2 downto 0);
+        firstReadRegister:      in          std_logic_vector(2 downto 0);
+        secondReadRegister:     in          std_logic_vector(2 downto 0);
         writeRegister:          in          std_logic_vector(2 downto 0);
         writeEnable:            in          std_logic := '0'
     );
@@ -26,11 +28,11 @@ architecture rtl of RegisterFile is
 
     type rType is array(0 to 7) of std_logic_vector(n-1 downto 0);
     signal q:       rType := (others => (others => '0'));
-    signal regOut:        std_logic_vector(n-1 downto 0);
 
 begin
-    
-    dataOut <= q(to_integer(unsigned(readRegister)));
+       
+    firstDataOut <= q(to_integer(unsigned(firstReadRegister)));
+    secondDataOut <= q(to_integer(unsigned(secondReadRegister)));
 
     process (clk,reset)
     begin

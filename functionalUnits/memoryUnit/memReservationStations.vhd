@@ -44,7 +44,7 @@ architecture mixed of memReservationStations is
     signal tempValid1:  std_logic_vector(0 downto 0);
     signal tempValid2:  std_logic_vector(0 downto 0);
 
-    signal invClk: std_logic := not clk;
+    signal invClk: std_logic;
     signal issuedLastCycle: std_logic := '0';
 
     signal tempLastExcutedMemDestName: std_logic_vector(2 downto 0) := (others => '0');
@@ -92,13 +92,13 @@ architecture mixed of memReservationStations is
 
         lastExcutedMemDestName <= tempLastExcutedMemDestName when outEnables /= "00000000000";
         address <= tempAddress when outEnables /= "00000000000";
+        invClk <= not clk;
         process (clk, issue, reset, outEnable)
         variable found1: integer;
         variable found2: integer;
         begin
             found1 := 0;
             found2 := 0;
-            invClk <= not clk;
             resets <= (others => '0');
 
             if (clk'event and clk = '0' and issuedLastCycle = '1') then

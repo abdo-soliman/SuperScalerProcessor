@@ -4,7 +4,7 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 entity shift_unit is
-    generic (n: integer := 8);
+    generic (n: integer := 16);
     port (
         s:      in std_logic;
         a:      in std_logic_vector(n-1 downto 0);

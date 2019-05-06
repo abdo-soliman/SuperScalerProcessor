@@ -83,23 +83,4 @@ architecture rtl of memUnitIntegration is
         validMemRob <= '1' when (robPopIssue = '1') else '0' when (robStoreIssue = '1' or robPushIssue = '1') else validLoadBuffers;
         mode <= "01" when (robStoreIssue = '1') else "10" when (robPushIssue = '1') else "11" when (robPopIssue = '1') else "00";
         enableLoadOut <= '0' when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else '1';
-        
-        -- process (clk, reset, robStoreIssue, robPushIssue, robPopIssue)
-        -- begin
-        --     if (reset = '1') then
-        --         null;
-        --     elsif (clk'event and clk = '1') then
-        --         enableLoadOut <= '0';
-        --         if (robStoreIssue = '1') then
-        --             mode <= "01";
-        --         elsif (robPushIssue = '1') then
-        --             mode <= "10";
-        --         elsif (robPopIssue = '1') then
-        --             mode <= "11";
-        --         else
-        --             mode <= "00";
-        --             enableLoadOut <= '1';
-        --         end if;
-        --     end if;
-        -- end process;
 end rtl;

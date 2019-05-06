@@ -27,7 +27,7 @@ entity memReservationStations is
         valid:                          out std_logic
     );
 end entity memReservationStations;
--- memMode:                        out std_logic_vector(1 downto 0) := (others => '0');
+
 architecture mixed of memReservationStations is
     signal tag1:            std_logic_vector(n-1 downto 0) := (others => '0');
     signal enablesTag1:     std_logic_vector(7 downto 0) := (others => '0');
@@ -45,13 +45,16 @@ architecture mixed of memReservationStations is
     signal tempValid2:  std_logic_vector(0 downto 0);
 
     signal invClk: std_logic := not clk;
+    signal issuedLastCycle: std_logic := '0';
+
+    signal tempLastExcutedMemDestName: std_logic_vector(2 downto 0) := (others => '0');
+    signal tempAddress: std_logic_vector(n-1 downto 0) := (others => '0');
     
     begin
         tempValid1(0) <= waitingDone;
         tempValid2(0) <= valid2;
         tag1(2 downto 0) <= waitingTag;
         full <= '1' when busies = "11111111" else '0';
-        -- memMode <= "00";
 
         genRs:
             for i in 0 to 7 generate
@@ -82,70 +85,71 @@ architecture mixed of memReservationStations is
                 inEnables(0)                => busies(i),
                 outEnable                   => outEnables(i),
                 ready                       => readies(i),
-                src2value                   => address,
-                outDestName                 => lastExcutedMemDestName
+                src2value                   => tempAddress,
+                outDestName                 => tempLastExcutedMemDestName
             );
         end generate genRs;
 
-        resets <= (others => '0');
+        lastExcutedMemDestName <= tempLastExcutedMemDestName when outEnables /= "00000000000";
+        address <= tempAddress when outEnables /= "00000000000";
         process (clk, issue, reset, outEnable)
         variable found1: integer;
         variable found2: integer;
         begin
             found1 := 0;
             found2 := 0;
-
             invClk <= not clk;
+            resets <= (others => '0');
+
+            if (clk'event and clk = '0' and issuedLastCycle = '1') then
+                issuedLastCycle <= '0';
+                enablesDestName <= (others => '0');
+                enablesOpcode   <= (others => '0');
+                enablesTag1     <= (others => '0');
+                enablesValid1   <= (others => '0');
+                enablesTag2     <= (others => '0');
+                enablesValid2   <= (others => '0');
+            end if;
             
             if (reset = '1') then
                 resets <= (others => '1');
-            elsif (issue = '1') then
+            elsif (issue = '1' and clk'event and clk = '1') then
                 tag1(2 downto 0) <= waitingTag;
-
-                if (clk'event and clk = '0') then
-                    enablesDestName <= (others => '0');
-                    enablesOpcode   <= (others => '0');
-                    enablesTag1     <= (others => '0');
-                    enablesValid1   <= (others => '0');
-                    enablesTag2     <= (others => '0');
-                    enablesValid2   <= (others => '0');
-                end if;
                 
-                if (clk'event and clk = '1' and issue'event and issue = '1') then
-                    for i in 0 to 7 loop
-                        if (found1 = 0) then
-                            if (busies(i) = '0') then
-                                enablesDestName(i) <= '1';
-                                enablesOpcode(i) <= '1';
-                                enablesTag1(i) <= '1';
-                                enablesValid1(i) <= waitingDone;
-                                enablesTag2(i) <= '1';
-                                enablesValid2(i) <= valid2;
-                                busies(i) <= '1';
-                                found1 := 1;
-                            end if;
+                for i in 0 to 7 loop
+                    if (found1 = 0) then
+                        if (busies(i) = '0') then
+                            enablesDestName(i) <= '1';
+                            enablesOpcode(i) <= '1';
+                            enablesTag1(i) <= '1';
+                            enablesValid1(i) <= waitingDone;
+                            enablesTag2(i) <= '1';
+                            enablesValid2(i) <= valid2;
+                            busies(i) <= '1';
+                            found1 := 1;
                         end if;
-                    end loop;
+                    end if;
+                end loop;
+                if (found1 = 1) then
+                    issuedLastCycle <= '1';
                 end if;
             end if;
 
-            if (reset /= '1') then
-                if (outEnable = '1') then
-                    if (clk'event and clk = '0') then
-                        for i in 0 to 7 loop
-                            if (found2 = 0) then
-                                if (readies(i) = '1') then
-                                    outEnables(i) <= '1';
-                                    valid <= '1';
-                                    busies(i) <= '0';
-                                    found2 := 1;
-                                else
-                                    outEnables(i) <= '0';
-                                    valid <= '0';
-                                end if;
+            if (reset /= '1' and outEnable = '1') then
+                if (clk'event and clk = '0') then
+                    for i in 0 to 7 loop
+                        if (found2 = 0) then
+                            if (readies(i) = '1') then
+                                outEnables(i) <= '1';
+                                valid <= '1';
+                                busies(i) <= '0';
+                                found2 := 1;
+                            else
+                                outEnables(i) <= '0';
+                                valid <= '0';
                             end if;
-                        end loop;
-                    end if;
+                        end if;
+                    end loop;
                 end if;
             end if;
 

@@ -39,14 +39,16 @@ architecture behavioral of arithmetic_unit is
                 Cout => cout
             );
 
-        process(A, B, cin, s)
+        process(s, a, b, cin)
         begin
             tempA <= a;
+            tempB <= b;
+            tempCin <= cin;
             if (s = "000") then
                 tempA <= (others => '0');
                 tempCin <= '0';
             elsif (s = "001") then
-                tempB <= not B;
+                tempB <= not b;
                 tempCin <= '1';
             elsif (s = "010") then
                 tempB <= (others => '1');
@@ -54,9 +56,6 @@ architecture behavioral of arithmetic_unit is
             elsif (s = "011") then
                 tempB <= (others => '0');
                 tempCin <= '1';
-            else
-                tempB <= B;
-                tempCin <= cin;
             end if;
         end process;
 end behavioral;

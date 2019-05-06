@@ -46,6 +46,12 @@ architecture mixed of aluReservationStations is
     signal tempValid2:  std_logic_vector(0 downto 0);
 
     signal invClk: std_logic := not clk;
+    signal issuedLastCycle: std_logic := '0';
+
+    signal tempLastExcutedAluDestName: std_logic_vector(2 downto 0) := (others => '0');
+    signal tempAluOp2: std_logic_vector(4 downto 0) := (others => '0');
+    signal tempOp1: std_logic_vector(n-1 downto 0) := (others => '0');
+    signal tempOp2: std_logic_vector(n-1 downto 0) := (others => '0');
     
     begin
         tempValid1(0) <= valid1;
@@ -81,26 +87,40 @@ architecture mixed of aluReservationStations is
                 inEnables(0)                => busies(i),
                 outEnable                   => outEnables(i),
                 ready                       => readies(i),
-                outOpcode                   => aluOp,
-                src1value                   => op1,
-                src2value                   => op2,
-                outDestName                 => lastExcutedAluDestName
+                outOpcode                   => tempAluOp2,
+                src1value                   => tempOp1,
+                src2value                   => tempOp2,
+                outDestName                 => tempLastExcutedAluDestName
             );
         end generate genRs;
 
-        resets <= (others => '0');
+        lastExcutedAluDestName <= tempLastExcutedAluDestName when outEnables /= "00000000000";
+        aluOp <= tempAluOp2 when outEnables /= "00000000000";
+        op1 <= tempOp1 when outEnables /= "00000000000";
+        op2 <= tempOp2 when outEnables /= "00000000000";
         process (clk, issue, reset)
         variable found1: integer;
         variable found2: integer;
         begin
             found1 := 0;
             found2 := 0;
-
             invClk <= not clk;
+            resets <= (others => '0');
+
+            if (clk'event and clk = '0' and issuedLastCycle = '1') then
+                issuedLastCycle <= '0';
+                enablesDestName <= (others => '0');
+                enablesOpcode   <= (others => '0');
+                enablesTag1     <= (others => '0');
+                enablesValid1   <= (others => '0');
+                enablesTag2     <= (others => '0');
+                enablesValid2   <= (others => '0');
+            end if;
+            
             if (reset = '1') then
                 resets <= (others => '1');
-            elsif (issue = '1') then
-                if (opcode = MOV_OPCODE) then
+            elsif (issue = '1' and clk'event and clk = '1') then
+                if (opcode = MOV_OPCODE or opcode = LDM_OPCODE) then
                     tempAluOp <= MOV_ALU_CODE;
                 elsif (opcode = SUB_OPCODE) then
                     tempAluOp <= SUB_ALU_CODE;
@@ -128,30 +148,22 @@ architecture mixed of aluReservationStations is
                     tempAluOp <= "11111";
                 end if;
 
-                if (clk'event and clk = '0') then
-                    enablesDestName <= (others => '0');
-                    enablesOpcode   <= (others => '0');
-                    enablesTag1     <= (others => '0');
-                    enablesValid1   <= (others => '0');
-                    enablesTag2     <= (others => '0');
-                    enablesValid2   <= (others => '0');
-                end if;
-                
-                if (clk'event and clk = '1' and issue = '1') then
-                    for i in 0 to 11 loop
-                        if (found1 = 0) then
-                            if (busies(i) = '0') then
-                                enablesDestName(i) <= '1';
-                                enablesOpcode(i) <= '1';
-                                enablesTag1(i) <= '1';
-                                enablesValid1(i) <= valid1;
-                                enablesTag2(i) <= '1';
-                                enablesValid2(i) <= valid2;
-                                busies(i) <= '1';
-                                found1 := 1;
-                            end if;
+                for i in 0 to 11 loop
+                    if (found1 = 0) then
+                        if (busies(i) = '0') then
+                            enablesDestName(i) <= '1';
+                            enablesOpcode(i) <= '1';
+                            enablesTag1(i) <= '1';
+                            enablesValid1(i) <= valid1;
+                            enablesTag2(i) <= '1';
+                            enablesValid2(i) <= valid2;
+                            busies(i) <= '1';
+                            found1 := 1;
                         end if;
-                    end loop;
+                    end if;
+                end loop;
+                if (found1 = 1) then
+                    issuedLastCycle <= '1';
                 end if;
             end if;
 

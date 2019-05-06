@@ -50,6 +50,8 @@ architecture mixed of memReservationStations is
     signal tempLastExcutedMemDestName: std_logic_vector(2 downto 0) := (others => '0');
     signal tempAddress: std_logic_vector(n-1 downto 0) := (others => '0');
     
+    signal notYet: std_logic := '1';
+
     begin
         tempValid1(0) <= waitingDone;
         tempValid2(0) <= valid2;
@@ -90,8 +92,13 @@ architecture mixed of memReservationStations is
             );
         end generate genRs;
 
-        lastExcutedMemDestName <= tempLastExcutedMemDestName when outEnables /= "00000000000";
-        address <= tempAddress when outEnables /= "00000000000";
+        notYet <= '0' when (notYet = '0' or outEnables /= "00000000000") else '1';
+        lastExcutedMemDestName <= (others => '0') when notYet = '1' else
+            tempLastExcutedMemDestName when outEnables /= "00000000000";
+        address <= (others => '0') when notYet = '1' else
+            tempAddress when outEnables /= "00000000000";
+        valid <= '1' when outEnables /= "00000000000" else '0';
+
         invClk <= not clk;
         process (clk, issue, reset, outEnable)
         variable found1: integer;
@@ -141,12 +148,12 @@ architecture mixed of memReservationStations is
                         if (found2 = 0) then
                             if (readies(i) = '1') then
                                 outEnables(i) <= '1';
-                                valid <= '1';
+                                -- valid <= '1';
                                 busies(i) <= '0';
                                 found2 := 1;
                             else
                                 outEnables(i) <= '0';
-                                valid <= '0';
+                                -- valid <= '0';
                             end if;
                         end if;
                     end loop;

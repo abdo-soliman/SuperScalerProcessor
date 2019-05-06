@@ -52,6 +52,8 @@ architecture mixed of aluReservationStations is
     signal tempAluOp2: std_logic_vector(4 downto 0) := (others => '0');
     signal tempOp1: std_logic_vector(n-1 downto 0) := (others => '0');
     signal tempOp2: std_logic_vector(n-1 downto 0) := (others => '0');
+
+    signal notYet: std_logic := '1';
     
     begin
         tempValid1(0) <= valid1;
@@ -94,10 +96,17 @@ architecture mixed of aluReservationStations is
             );
         end generate genRs;
 
-        lastExcutedAluDestName <= tempLastExcutedAluDestName when outEnables /= "00000000000";
-        aluOp <= tempAluOp2 when outEnables /= "00000000000";
-        op1 <= tempOp1 when outEnables /= "00000000000";
-        op2 <= tempOp2 when outEnables /= "00000000000";
+        notYet <= '0' when (notYet = '0' or outEnables /= "00000000000") else '1';
+        lastExcutedAluDestName <= (others => '0') when notYet = '1' else
+            tempLastExcutedAluDestName when outEnables /= "00000000000";
+        aluOp <= (others => '0') when notYet = '1' else
+            tempAluOp2 when outEnables /= "00000000000";
+        op1 <= (others => '0') when notYet = '1' else
+            tempOp1 when outEnables /= "00000000000";
+        op2 <= (others => '0') when notYet = '1' else
+            tempOp2 when outEnables /= "00000000000";
+        valid <= '1' when outEnables /= "00000000000" else '0';
+
         invClk <= not clk;
         process (clk, issue, reset)
         variable found1: integer;
@@ -173,12 +182,12 @@ architecture mixed of aluReservationStations is
                         if (found2 = 0) then
                             if (readies(i) = '1') then
                                 outEnables(i) <= '1';
-                                valid <= '1';
+                                -- valid <= '1';
                                 busies(i) <= '0';
                                 found2 := 1;
                             else
                                 outEnables(i) <= '0';
-                                valid <= '0';
+                                -- valid <= '0';
                             end if;
                         end if;
                     end loop;

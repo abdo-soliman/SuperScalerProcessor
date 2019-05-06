@@ -42,26 +42,31 @@ architecture rtl of CPU is
 
 	signal instQueueOut:		std_logic_vector(31 downto 0) := (others => '0');
 	signal instQueueMode:		std_logic := '0';
+	signal instQueueWritten:	std_logic := '0';
 
 	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
-
+	--------for memoryunit--------------------------------------------------------------------
+	signal loadBuffersFull:		std_logic := '0';
+	signal issueLoadBuffers:	std_logic := '0';
 	--For testing --------------------------------------------------------------
 	signal ramOut:				std_logic_vector(31 downto 0) := (others => '0');
 	signal ROBOutToRS:			std_logic_vector(48 downto 0) := (others => '0'); --length may be changed @Ahmed
+	signal ROBdecodedTag:		std_logic_vector(2 downto 0)  :=  (others => '0');
+	signal loadBuffersIn:		std_logic_vector(28 downto 0) :=  (others => '0');
 	----------------------------------------------------------------------------
-	signal instQueueReset:		std_logic := '0';
+	signal flush:		std_logic := '0';
 
 	signal RFAdapterOut:			std_logic_vector(15 downto 0) := (others => '0');
 	signal firstRegisterFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
 	signal secondRegisterFileOut:		std_logic_vector(15 downto 0) := (others => '0'); 
 
 	signal dataMEMout:				std_logic_vector(15 downto 0) := (others => '0');
-	signal dataMEMtag:				std_logic_vector(3 downto 0) := (others => '0');
+	signal dataMEMtag:				std_logic_vector(2 downto 0) := (others => '0');
 	signal dataMEMtagValid:			std_logic := '0';
 	
 
 	signal ALUout:					std_logic_vector(15 downto 0) := (others => '0');
-	signal ALUtag:					std_logic_vector(3 downto 0) := (others => '0');
+	signal ALUtag:					std_logic_vector(2 downto 0) := (others => '0');
 	signal ALUtagValid:				std_logic := '0';
 
 	signal flags:					std_logic_vector(2 downto 0) := (others => '0');
@@ -72,7 +77,7 @@ architecture rtl of CPU is
 begin
 	
 	ROBEnableQueue <= not ROBFull;
-	instQueueReset <= reset or ROBwritePC;
+	flush <= reset or ROBwritePC;
 	
 	overWrittenPC <= dataMEMout when ROBisPop = '1'
 			else ROBnewPC;
@@ -86,17 +91,7 @@ begin
 		input => pcControllerOut,
 		enable => pcEnable,
 		clk => clk,
-		reset => reset, --reset pc
-		output => pcOut
-	);
-
-	IR:	entity work.mRegister
-	generic map(n => 16)
-	port map (
-		input => pcControllerOut,
-		enable => pcEnable,
-		clk => clk,
-		reset => reset, --reset pc
+		reset => '0', --reset pc
 		output => pcOut
 	);
 
@@ -106,6 +101,8 @@ begin
 		JMPnewPC => overWrittenPC,
 		JMPWrite => ROBwritePC,
 		queueFull => queueFull,
+		reset => reset,
+		instMemOut => ramOut(15 downto 0),
 		newPC	 => pcControllerOut,
 		memRead => memRead
 	);
@@ -114,6 +111,7 @@ begin
 	port map (
 		address => pcOut,
 		dataOut => ramOut,
+		reset => reset,
 		readEnable => '1',
 		clk => clk
 	);
@@ -123,8 +121,9 @@ begin
         input => ramOut,      	
         enable => ROBEnableQueue,
         mode => instQueueMode,
-        reset => instQueueReset,
+        reset => flush,
         clk => clk,
+        written => instQueueWritten,
         queueFull => queueFull,
         output => instQueueOut
     );
@@ -153,9 +152,31 @@ begin
     	writeEnable => ROBwriteRegisterEnable
     );
 
+    dataRam: entity work.memUnitIntegration
+    port map (
+    	clk => clk,
+    	issue => issueLoadBuffers,--signal from Rob,
+    	reset => flush, --note we will use it to flush(or with pcWriteEnable)
+    	robStoreIssue => ROBmemWriteEnable, --mesh fih is store
+    	robPushIssue => ROBisPush, --not sure if the right signal
+    	robPopIssue => ROBisPop, --not sure bardo
+    	robTag => ROBdecodedTag, --will be output of decoding
+    	robAddress => ROBOutputAddress, --some signal from ROB
+    	robValue => ROBOutputValue,
+    	instruction => loadBuffersIn, --from decoded circuit
+    	lastExcutedAluDestName => ALUTag,
+    	lastExcutedAluDestNameValue => ALUout,
+    	lastExcutedMemDestName => dataMEMtag,
+    	lastExcutedMemDestNameValue => dataMEMout,
+    	validAlu => AluTagValid,
+    	validMemRob => dataMEMtagValid,
+    	full => loadBuffersFull
+    );
+
     rob: entity work.ReorderBuffer --Not all signals are connected to ROB
 	port map(
 		instruction => instQueueOut,
+		instQueueWritten => instQueueWritten,
         aluValue => ALUout,
         aluTag => ALUtag,
         mememoryValue => dataMEMout,

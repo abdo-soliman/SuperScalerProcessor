@@ -109,6 +109,8 @@ function isTypeThree(opCode:   std_logic_vector(4 downto 0)) return boolean;
 ----------------------------------------------------------------------------
 function isLoopFamily(opCode:   std_logic_vector(4 downto 0)) return boolean;
 --------------------------------------------------------------------------------
+function toString ( a: std_logic_vector) return string;
+--------------------------------------------------------------------------------
 end package constants;
 -----------------------------Helper Functions-------------------------------
 package body constants is 
@@ -134,7 +136,7 @@ end Value;
 function ValueTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))     
                     return  std_logic_vector is
 begin
-    return entry(42 downto 39);
+    return entry(42 downto 40);
 end ValueTag;
 ----------------------------------------------------------------------------
 function ValueValid(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
@@ -152,7 +154,7 @@ end DestinationAddress;
 function DestinationAddressTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0'))    
                     return  std_logic_vector is
 begin
-    return entry(25 downto 22);
+    return entry(25 downto 23);
 end DestinationAddressTag;
 ----------------------------------------------------------------------------
 function DestinationRegister(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
@@ -164,7 +166,7 @@ end DestinationRegister;
 function WaitingTag(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
 					return  std_logic_vector is
 begin
-    return entry(6 downto 3);
+    return entry(6 downto 4);
 end WaitingTag;
 ----------------------------------------------------------------------------
 function Execute(entry : std_logic_vector(CONST_WIDTH-1 downto 0) := (others => '0')) 	
@@ -349,7 +351,6 @@ begin
     end if;
 end isTypeThree;
 ----------------------------------------------------------------------------
-----------------------------------------------------------------------------
 function isLoopFamily(opCode:   std_logic_vector(4 downto 0))
                             return boolean is
 begin
@@ -359,5 +360,16 @@ begin
         return false;
     end if;
 end isLoopFamily;
-
+--------------------------------------------------------------------------------
+function toString ( a: std_logic_vector) return string is
+variable b : string (1 to a'length) := (others => NUL);
+variable stri : integer := 1; 
+begin
+    for i in a'range loop
+        b(stri) := std_logic'image(a((i)))(2);
+    stri := stri+1;
+    end loop;
+return b;
+end function;
+--------------------------------------------------------------------------------
 end package body constants;

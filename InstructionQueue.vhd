@@ -15,6 +15,7 @@ entity InstructionQueue is
         mode:           in          std_logic := '0';
         reset:  		in      	std_logic := '0';
         clk:    		in      	std_logic := '0';
+        written:        out         std_logic := '0';
         queueFull:		out 		std_logic := '0';
         numberOfElementes:  out     std_logic_vector(3 downto 0) := (others => '0');
         output: 		out     	std_logic_vector(width-1 downto 0) := (others => '0')
@@ -26,20 +27,29 @@ architecture rtl of InstructionQueue is
     signal q 	: qType := (others => (others => '0'));
     signal tail	: std_logic_vector(3 downto 0) := (others => '0');
     signal queueFullSignal: std_logic :='0';
-    
+    signal writtenSignal: std_logic := '0';
 	
 	
 begin
     output <= q(0)&q(1);
     queueFull <= queueFullSignal;
-
+    written <= writtenSignal;
     numberOfElementes <= tail;
+
     process(clk,reset)
     begin
         if (reset = '1') then
         	q <= (others => (others => '0'));
         	tail <= (others=> '0');
+            queueFullSignal <= '0';
+            writtenSignal <= '0';
+
         elsif (clk'event and clk = '1') then --shift and output to ROB, ROB reads in negative edge
+            
+            if (writtenSignal = '1') then
+                writtenSignal <= '0';
+            end if;
+
         	if(enable = '1') then
 
                 if (mode = '0') then --shift by one
@@ -83,6 +93,8 @@ begin
 	        	else
 	        		queueFullSignal <= '0';
 	        	end if;
+
+                writtenSignal <= '1';
     		end if;	
         end if;
     end process;

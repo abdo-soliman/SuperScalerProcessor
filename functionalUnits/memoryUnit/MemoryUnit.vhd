@@ -19,9 +19,11 @@ architecture rtl of MemoryUnit is
     signal readWriteEnable: std_logic := '0';
     signal currentAddress:  std_logic_vector(15 downto 0) := (others => '0');
     signal sp:              std_logic_vector(15 downto 0) := SP_START;
-    signal invClk:  std_logic := not clk;
+    signal invClk:  std_logic;
 
     begin
+        invClk <= not clk;
+        
         ram: entity work.DataRam
         port map (
             clk             => invClk,

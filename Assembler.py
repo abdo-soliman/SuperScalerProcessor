@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("MEMoutput.txt","w+")
+outFile = open("BRANCHoutput.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -63,16 +63,19 @@ with open(inputFileName) as f:
         line = line.strip()
         line = line.upper()
         line = line.split(' ')
-
+        
         if '.ORG' in line:
-            address = int(line[1]) 
+            address = line[1] 
+            address = int(address, 16)
             for i in range (mynum,address):
                 outFile.write("0".zfill(16))
                 outFile.write("\n")
                 mynum += 1
             continue
         if (re.match( r"^([0-9]+)$",line[0])):
-             outFile.write(str(binary_repr(int(line[0]),width=None)).zfill(16))
+             number = line[0] 
+             number = int(number, 16)
+             outFile.write(str(binary_repr(number,width=None)).zfill(16))
              outFile.write("\n")
              mynum += 1
              continue

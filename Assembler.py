@@ -8,7 +8,7 @@ opcode = {}
 opcode['NOP'] = '00000'
 opcode['SETC'] = '00010'
 opcode['CLRC'] = '00011'
-opcode['INC'] = '00110'
+opcode['INC'] = '00100'
 opcode['DEC'] = '00101'
 opcode['IN'] = '00110'
 opcode['OUT'] = '00111'
@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("BRANCHoutput.txt","w+")
+outFile = open("MEMORYoutput.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":

@@ -987,6 +987,7 @@ begin
             isPushSignal <= isPushV;
             isPopSignal <= isPopV;
             flagsOut <= flagsOutV;
+            destRegisterGotValueV := 0;
 
             if(ROBEmptySignal /= '1')then
                 report "Plz";

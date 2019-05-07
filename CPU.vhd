@@ -121,6 +121,7 @@ begin
 		dataOut => ramOut,
 		reset => reset,
 		readEnable => '1',
+		interrupt => interrupt,
 		clk => clk
 	);
 

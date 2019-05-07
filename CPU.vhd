@@ -29,6 +29,7 @@ architecture rtl of CPU is
 	signal ROBportReadEnable: 	std_logic := '0';
 	signal ROBisPush:			std_logic := '0';
 	signal ROBisPop:			std_logic := '0';
+	signal ROBisRet:			std_logic := '0';
 	signal ROBwriteRegisterEnable: 	std_logic := '0';
 	signal ROBfirstReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
 	signal ROBsecondReadRegister:		std_logic_vector(2 downto 0) := (others => '0');
@@ -164,6 +165,7 @@ begin
     	robStoreIssue => ROBmemWriteEnable, --mesh fih is store
     	robPushIssue => ROBisPush, --not sure if the right signal
     	robPopIssue => ROBisPop, --not sure bardo
+    	isRet => ROBisRet,
     	robTag => ROBtagToMem, --will be output of decoding
     	robAddress => ROBOutputAddress, --some signal from ROB
     	robValue => ROBOutputValue,
@@ -226,6 +228,7 @@ begin
         isPopOut => ROBisPop,
 		flagsOut => ROBflagsOut,
 		tagToMemory => ROBtagToMem,
+		isRet => ROBisRet,
         instructionToALU => ALUinstructionIn,
         ALUissue => ALUissue
 

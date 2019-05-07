@@ -53,7 +53,7 @@ architecture rtl of CPU is
 
 	signal ROBsetFlags:			std_logic := '0';
 	signal ROBOutToRS:			std_logic_vector(48 downto 0) := (others => '0'); --length may be changed @Ahmed
-	signal ROBdecodedTag:		std_logic_vector(2 downto 0)  :=  (others => '0');
+	signal ROBtagToMem:		std_logic_vector(2 downto 0)  :=  (others => '0');
 	signal loadBuffersInstructionIn:		std_logic_vector(28 downto 0) :=  (others => '0');
 	----------------------------------------------------------------------------
 	signal flush:		std_logic := '0';
@@ -164,7 +164,7 @@ begin
     	robStoreIssue => ROBmemWriteEnable, --mesh fih is store
     	robPushIssue => ROBisPush, --not sure if the right signal
     	robPopIssue => ROBisPop, --not sure bardo
-    	robTag => ROBdecodedTag, --will be output of decoding
+    	robTag => ROBtagToMem, --will be output of decoding
     	robAddress => ROBOutputAddress, --some signal from ROB
     	robValue => ROBOutputValue,
     	instruction => loadBuffersInstructionIn, --from decoded circuit
@@ -224,7 +224,8 @@ begin
         portReadEnableOut => ROBportReadEnable,
         isPushOut => ROBisPush,
         isPopOut => ROBisPop,
-        flagsOut => ROBflagsOut,
+		flagsOut => ROBflagsOut,
+		tagToMemory => ROBtagToMem,
         instructionToALU => ALUinstructionIn,
         ALUissue => ALUissue
 

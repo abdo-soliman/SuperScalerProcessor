@@ -33,6 +33,7 @@ constant LDM_OPCODE:    std_logic_vector(4 downto 0) := "10110";
 constant CALL_OPCODE:   std_logic_vector(4 downto 0) := "11000";
 constant RET_OPCODE:    std_logic_vector(4 downto 0) := "11001";
 constant RTI_OPCODE:    std_logic_vector(4 downto 0) := "11010"; --I fixed this from RTL @Ahmed
+constant INT_OPCODE:    std_logic_vector(4 downto 0) := "11011"; --I added this @Ahmed
 constant JZ_OPCODE:     std_logic_vector(4 downto 0) := "11100";
 constant JN_OPCODE:     std_logic_vector(4 downto 0) := "11101";
 constant JC_OPCODE:     std_logic_vector(4 downto 0) := "11110";
@@ -237,7 +238,7 @@ end setDone;
 function isStackFamily(opCode:   std_logic_vector(4 downto 0))
                             return boolean is
 begin
-    if(opCode = PUSH_OPCODE or opCode = POP_OPCODE or opCode = RET_OPCODE or opCode = RTI_OPCODE or opCode = CALL_OPCODE) then
+    if(opCode = PUSH_OPCODE or opCode = POP_OPCODE or opCode = RET_OPCODE or opCode = RTI_OPCODE or opCode = CALL_OPCODE or opCode = INT_OPCODE) then
         return true;
     else
         return false;

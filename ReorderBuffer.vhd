@@ -40,6 +40,8 @@ entity ReorderBuffer is
         isPushOut:              out        std_logic := '0';
         isPopOut:               out        std_logic := '0';
         flagsOut:               out        std_logic_vector (2 downto 0) := (others => '0');
+        tagToMemory:            out        std_logic_vector (2 downto 0) := (others => '0');
+        isRet:                  out        std_logic := '0';
         --may be removed when decoding circuit is in @Ahmed
         lastStore:              out        std_logic_vector(2 downto 0) := (others => '0'); 
         lastStoreValid:         out        std_logic := '0';
@@ -163,7 +165,7 @@ architecture rtl of ReorderBuffer is
                 end if;
             end if;
             
-            if (isTypeThree(OPcode)) then
+            if (isTypeThree(OPcode) and OPcode /= RTI_OPCODE) then
 
                 if(Execute(entry) = '0' and aluTagInt = WaitingTag(entry) and aluTagValid = '1') then
 
@@ -181,6 +183,15 @@ architecture rtl of ReorderBuffer is
 
                     end if;
 
+                end if;
+
+            end if;
+
+            if(OPcode = RTI_OPCODE) then 
+                
+                if(Execute(entry) = '0' and memoryTagInt = WaitingTag(entry) and memoryTagValid = '1') then 
+                    entry(2) := '1';
+                    entry(6 downto 4) := mememoryValue(15 downto 13);
                 end if;
 
             end if;
@@ -313,7 +324,7 @@ architecture rtl of ReorderBuffer is
             lastStore := writePointer;
             lastStoreValid := '1';
 
-        elsif(isTypeThree(loopOpCode)) then --case jumps
+        elsif(isTypeThree(entryOpCode) and entryOpCode /= RTI_OPCODE) then --case jumps
 
             l := to_integer(unsigned(readPointer));
             r := to_integer(unsigned(writePointer));
@@ -409,7 +420,25 @@ architecture rtl of ReorderBuffer is
                     commitPop := '1';
                 elsif (ValueValid(entry) = '1') then 
                     isPop := '1';
-                    entry(1) := '0';
+                    entry(1) := '1';
+                end if;
+
+            elsif entryOpCode = INT_OPCODE then
+                if(Execute(entry) = '1' and Done(entry) = '0') then 
+                    -- push return PC 
+                    outputValue := Value(entry);
+                    isPush := '1';
+                    entry(1) := '1';
+                elsif(Done(entry) = '1') then 
+                    commited := true;
+                    -- push flags
+                    outputValue := (others => '0');
+                    outputValue(15 downto 13) := WaitingTag(entry);
+                    -- outputValue := (15 downto 13 => WaitingTag(entry), others => '0');
+                    isPush := '1';
+                    -- write interrupt address into PC
+                    pcOutValue <= DestinationAddress(entry);
+                    pcWriteEnable := '1';
                 end if;
 
             elsif (entryOpCode = PUSH_OPCODE) then
@@ -457,10 +486,18 @@ architecture rtl of ReorderBuffer is
                 pcWriteEnable := '1';
 
             elsif (entryOpCode = RTI_OPCODE) then
-                --May god be with you
-                commited := true;
-                null;
 
+                if(Execute(entry) = '0' and Done(entry) = '0') then 
+                    isPop := '1';
+                    
+                    entry(1) := '1';
+                elsif Execute(entry) = '1' and Done(entry) = '1' then    
+                    commited := true;
+                    isPop := '1';
+                    pcWriteEnable := '1';
+                    
+                end if;
+                
             end if;
 
 
@@ -718,7 +755,7 @@ begin
 
         elsif (clk'event and clk = '0') then
             ALUissue <= '0';
-
+            isRet <= '0';
             registerWriteEnableV := '0';
             memoryWriteEnableV := '0';
             portWriteEnableV := '0';
@@ -729,7 +766,8 @@ begin
             isStoreV := '0';
             commitPopV := '0';
             flagsOutV := (others => '0');
-
+            
+            tagToMemory <= readPointer;
             registerWriteEnableSignal <= registerWriteEnableV;
             memoryWriteEnableSignal <= memoryWriteEnableV;
             portWriteEnableSignal <= portWriteEnableV;
@@ -773,9 +811,10 @@ begin
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
                     ROBFullSignal <= '0';
-                    
+                else
+                    q(to_integer(unsigned(readPointer))) <= inp;    
                 end if;
-
+                
                 if (commitedV and registerWriteEnableV = '1') then 
                     --TODO add RF Adapter
                     if (commitPopV = '1')then
@@ -804,13 +843,17 @@ begin
 
                 end if;
 
+                if (isPopV = '0' and pcWriteEnableV = '1') then --RET 
+                    isRet <= '1';
+                end if;
+
                 if (isStoreV = '1') then --store
 
                     if (commitedV) then 
                         if (lastStoreValidSignal = '1' and lastStoreSignal = readPointer) then
                             lastStoreValidSignal <= '0';
                         end if; 
-
+                        
                         resolveLoad(readPointer,q,readPointer,writePointer,ROBEmptySignal);
 
                     end if;

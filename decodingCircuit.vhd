@@ -124,12 +124,13 @@ architecture rtl of decodingCircuit is
             end if;
 
             if (opcodeType = "00") then -- in will have the value of the port
+                setZeroSrc2 := '1';
                 if (opcode /= NOP_OPCODE and opcode /= IN_OPCODE and opcode /= OUT_OPCODE) then
                     rsAluValid <= '1';
                     setZeroSrc := '1';
                 end if;
-                validSrc2 := '0';
-                valueSrc2 := (others => '0');
+                -- validSrc2 := '0';
+                -- valueSrc2 := (others => '0');
                 robValid <= '1';    -- 00 instruction never stall
                 if (opcode = NOP_OPCODE) then
                     valueSrc1 := (others => '0');

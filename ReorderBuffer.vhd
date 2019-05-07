@@ -594,7 +594,7 @@ architecture rtl of ReorderBuffer is
         instQueueEnable <= '1';
         instQueueMode <= '0';
 
-        robValid <= '1';
+        robValid <= '1';    
         rsAluValid <= '0';
         rsMemValid <= '0';
 
@@ -668,12 +668,13 @@ architecture rtl of ReorderBuffer is
         end if;
 
         if (opcodeType = "00") then -- in will have the value of the port
+            setZeroSrc2 := '1';
             if (opcode /= NOP_OPCODE and opcode /= IN_OPCODE and opcode /= OUT_OPCODE) then
                 rsAluValid <= '1';
                 setZeroSrc := '1';
             end if;
-            validSrc2 := '0';
-            valueSrc2 := (others => '0');
+            -- validSrc2 := '0';
+            -- valueSrc2 := (others => '0');
             robValid <= '1';    -- 00 instruction never stall
             if (opcode = NOP_OPCODE) then
                 valueSrc1 := (others => '0');
@@ -1131,8 +1132,8 @@ begin
         --------------------------------------------------------------------
         --Decoding
         elsif(instQueueWritten'event and instQueueWritten = '1') then
-            temp1 := q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24)))))));
-            temp2 := q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21)))))));
+            temp1 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24))))))));
+            temp2 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21))))))));
             decode(
                 robFull => ROBFullSignal,
                 aluRsFull => aluRsFull,

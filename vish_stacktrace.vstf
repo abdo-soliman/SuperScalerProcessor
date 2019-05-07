@@ -1,0 +1,17 @@
+# Current time Tue May  7 20:40:37 2019
+# ModelSim - Intel FPGA Edition Stack Trace
+# Program = vish
+# Id = "10.6d"
+# Version = "2018.02"
+# Date = "Feb 24 2018"
+# Platform = linuxpe
+# 0    0x086351ff: '<unknown (@0x86351ff)>'
+# 1    0x086364b5: 'dbg_sym_load_block + 0x1b5' in '/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/vish'
+# 2    0x08636c2e: '<unknown (@0x8636c2e)>'
+# 3    0x08636c1f: '<unknown (@0x8636c1f)>'
+# 4    0x08639653: 'parser_sym_load_block + 0xc3' in '/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/vish'
+# 5    0x0837e767: 'sym_get_decls_from_line + 0x97' in '/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/vish'
+# 6    0x0837f773: 'tclprim_ParserGetDeclAtLine + 0x183' in '/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/vish'
+# 7    0x084e37eb: 'TclInvokeStringCommand + 0x7b' in '/home/ahmed/intelFPGA_pro/18.1/modelsim_ase/linuxaloem/vish'
+# 8    0x0b856b6b: '<unknown (@0xb856b6b)>'
+# 9    0x0cb1793b: '<unknown (@0xcb1793b)>'

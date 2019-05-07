@@ -45,6 +45,7 @@ architecture rtl of CPU is
 	signal instQueueOut:		std_logic_vector(31 downto 0) := (others => '0');
 	signal instQueueMode:		std_logic := '0';
 	signal instQueueWritten:	std_logic := '0';
+	signal instQueueNumberOfElements: std_logic_vector(3 downto 0);
 
 	signal overWrittenPC:		std_logic_vector(15 downto 0) := (others => '0');
 	--------for memoryunit--------------------------------------------------------------------
@@ -83,8 +84,7 @@ architecture rtl of CPU is
 begin
 	
 	inputPortReady <= ROBportReadEnable;
-	
-	ROBEnableQueue <= not ROBFull;
+
 	flush <= reset or ROBwritePC;
 	
 	overWrittenPC <= dataMEMout when ROBisPop = '1'
@@ -133,6 +133,7 @@ begin
         clk => clk,
         written => instQueueWritten,
         queueFull => queueFull,
+        numberOfElementes => instQueueNumberOfElements,
         output => instQueueOut
     );
 
@@ -216,6 +217,7 @@ begin
 
         reset => reset,
         clk => clk,
+        inPort => inputPort,
         ROBFull => ROBFull,
 
         pcWriteOut => ROBwritePC,
@@ -232,9 +234,17 @@ begin
 		flagsOut => ROBflagsOut,
 		tagToMemory => ROBtagToMem,
 		isRet => ROBisRet,
+        instQueueShiftEnable => ROBEnableQueue,
+        instQueueShiftMode => instQueueMode,
         instructionToALU => ALUinstructionIn,
-        ALUissue => ALUissue
+        instructionToMEM => loadBuffersInstructionIn,
+        ALUissue => ALUissue,
+        MEMissue => issueLoadBuffers,
 
+        aluRsFull => ALUfull,
+        memRsFull => loadBuffersFull,
+        currentPc => pcOut,
+        instQueueNumberOfElements => instQueueNumberOfElements
     );
 		
 	

@@ -8,7 +8,8 @@ entity CPU is
 		reset: in 				std_logic 		:= '0';
 		inputPort: in 			std_logic_vector(15 downto 0) := (others => '0'); 			
 		outputPort: out 		std_logic_vector(15 downto 0) := (others => '0'); 			
-		interrupt:	in 			std_logic 		:= '0'
+		interrupt:	in 			std_logic 		:= '0';
+		inputPortReady: 	out std_logic := '0'
 	);
 end entity CPU;
 
@@ -80,6 +81,8 @@ architecture rtl of CPU is
 
 
 begin
+	
+	inputPortReady <= ROBportReadEnable;
 	
 	ROBEnableQueue <= not ROBFull;
 	flush <= reset or ROBwritePC;

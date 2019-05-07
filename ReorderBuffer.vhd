@@ -545,6 +545,7 @@ architecture rtl of ReorderBuffer is
     variable destRegister:     std_logic_vector(2 downto 0);
     variable waitingTag:  std_logic_vector(2 downto 0);
     variable setZeroSrc:  std_logic;
+    variable setZeroSrc2: std_logic;
 
     begin
         
@@ -662,10 +663,9 @@ architecture rtl of ReorderBuffer is
                 robValid <= '1';    -- only SHR and SHL stall
             end if;
         elsif (opcodeType = "10") then
-            if (opcode /= STD_OPCODE) then
-                validSrc2 := '0';
-                valueSrc2 := (others => '0');
-            end if;
+            if (opcode /= STD_OPCODE or opcode /= PUSH_OPCODE) then
+                    setZeroSrc2 := '1';
+                end if;
 
             if (opcode = LDD_OPCODE) then
                 rsMemValid <= '1';
@@ -683,6 +683,7 @@ architecture rtl of ReorderBuffer is
 
             if (opcode = LDM_OPCODE) then
                 robValid <= '1';    -- only LDM Stalls
+                rsAluValid <= '1';
                 setZeroSrc := '1';
                 --instQueueMode := '1';
                 valueSrc2 := immediateValue;
@@ -692,13 +693,12 @@ architecture rtl of ReorderBuffer is
             if (opcode = POP_OPCODE) then
                 validSrc1 := '0';
                 valueSrc1 := (others => '0');
-            elsif (opcode = LDD_OPCODE) then
-                validSrc1 := '0';
-                valueSrc1 := (others => '0');
-            -- elsif (opcode = LDM_OPCODE) then
-            --     -- stall <= '1';
-            --     setZeroSrc := '1';
+                setZeroSrc := '1';
             end if;
+            --if (opcode = LDD_OPCODE) then
+            --    validSrc1 := '0';
+            --    valueSrc1 := (others => '0');
+            --end if;
         elsif (opcodeType = "11") then
             robValid <= '1';    -- 11 isntructions never stall --malosh lazma
             if (opcode = RET_OPCODE or opcode = RTI_OPCODE) then
@@ -738,11 +738,32 @@ architecture rtl of ReorderBuffer is
             robInstruction(25 downto 10) <= (others => '0');
             robInstruction(26) <= '0';
             robInstruction(42 downto 27) <= (others => '0');
+        elsif (setZeroSrc2 = '0') then
+            robInstruction(0) <= '0';
+            robInstruction(25 downto 10) <= (others => '0');
+            robInstruction(26) <= validSrc1;
+            robInstruction(42 downto 27) <= valueSrc1;
         else
             robInstruction(0) <= validSrc2;
             robInstruction(25 downto 10) <= valueSrc2;
             robInstruction(26) <= validSrc1;
             robInstruction(42 downto 27) <= valueSrc1;
+        end if;
+
+        if (src1state = INEXECUTE) then
+            valueSrc1(2 downto 0) := valueSrc1(15 downto 13);
+            valueSrc1(15 downto 3) := (others => '0');
+            validSrc1 := '0';
+        end if;
+
+        if (src2state = INEXECUTE) then
+            valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
+            valueSrc2(15 downto 3) := (others => '0');
+            validSrc2 := '0';
+        end if;
+
+        if (lastStoreValid = '1' and opcode = LDD_OPCODE) then
+            valueSrc1(2 downto 0) := waitingTag;
         end if;
         
         rsAluInstruction(2 downto 0) <= rsDestName;

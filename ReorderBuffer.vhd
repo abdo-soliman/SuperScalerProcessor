@@ -44,10 +44,6 @@ entity ReorderBuffer is
         isRet:                  out        std_logic := '0';
         ------------------------------------------------------------------------
         --Decoding signals out
-        firstSourceRegister:        out        std_logic_vector(2 downto 0) := (others => '0');
-        secondSourceRegister:       out        std_logic_vector(2 downto 0) := (others => '0');
-        firstSourceValue:           in         std_logic_vector(15 downto 0) := (others => '0');
-        secondSourceValue:          in         std_logic_vector(15 downto 0) := (others => '0');
         instQueueShiftEnable:       out        std_logic := '0';
         instQueueShiftMode:         out        std_logic := '0';
         instructionToALU: 		    out     	std_logic_vector(41 downto 0) := (others => '0');
@@ -970,6 +966,9 @@ begin
 
                 writePointer <= writePointer + 1;
 
+                if(writePointer + 1 = readPointer) then 
+                    ROBFullSignal <= '1';
+                end if;
             end if;
 
         elsif (clk'event and clk = '0') then

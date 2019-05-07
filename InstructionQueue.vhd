@@ -84,6 +84,7 @@ begin
                 
        		end if;	
     	elsif (clk'event and clk = '0') then 
+            writtenSignal <= '1';
         	if(queueFullSignal = '0') then 
 	        	q(to_integer(unsigned(tail))) <= input(31 downto 16);
 	        	q(to_integer(unsigned(tail+1))) <= input(15 downto 0);
@@ -94,7 +95,6 @@ begin
 	        		queueFullSignal <= '0';
 	        	end if;
 
-                writtenSignal <= '1';
     		end if;	
         end if;
     end process;

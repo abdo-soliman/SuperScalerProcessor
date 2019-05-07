@@ -12,6 +12,7 @@ entity memUnitIntegration is
         robStoreIssue:                  in std_logic;
         robPushIssue:                   in std_logic;
         robPopIssue:                    in std_logic;
+        isRet:                          in std_logic;
         robTag:                         in std_logic_vector(2 downto 0);
         robAddress:                     in std_logic_vector(15 downto 0);
         robValue:                       in std_logic_vector(15 downto 0);
@@ -84,7 +85,9 @@ architecture rtl of memUnitIntegration is
         address <= robAddress when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else addressLoad;
 
         validMem <= '1' when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else validLoadBuffers;
-        validMemRob <= '1' when (robPopIssue = '1') else '0' when (robStoreIssue = '1' or robPushIssue = '1') else validLoadBuffers;
+        validMemRob <= '0' when (isRet = '1' and robPopIssue = '1') else
+            '1' when (robPopIssue = '1') else
+            '0' when (robStoreIssue = '1' or robPushIssue = '1') else validLoadBuffers;
 
         tempDataIn <= robValue when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else (others => '0');
         

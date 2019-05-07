@@ -45,15 +45,17 @@ entity ReorderBuffer is
         lastStoreValid:         out        std_logic := '0';
         ------------------------------------------------------------------------
         --Decoding signals out
-        firstSourceRegister:          out        std_logic_vector(2 downto 0) := (others => '0');
-        secondSourceRegister:         out        std_logic_vector(2 downto 0) := (others => '0');
-        firstSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
-        secondSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
-        instQueueShiftEnable:           out        std_logic := '0';
-        instQueueShiftMode:           out        std_logic := '0';
+        firstSourceRegister:        out        std_logic_vector(2 downto 0) := (others => '0');
+        secondSourceRegister:       out        std_logic_vector(2 downto 0) := (others => '0');
+        firstSourceValue:           in         std_logic_vector(15 downto 0) := (others => '0');
+        secondSourceValue:          in         std_logic_vector(15 downto 0) := (others => '0');
+        instQueueShiftEnable:       out        std_logic := '0';
+        instQueueShiftMode:         out        std_logic := '0';
         instructionToALU: 		    out     	std_logic_vector(41 downto 0) := (others => '0');
-        ALUissue:                   out         std_logic := '0'
-        --------------------------------------------------------------------------------
+        instructionToMEM:           out         std_logic_vector(28 downto 0) := (others => '0');
+        ALUissue:                   out         std_logic := '0';
+        MEMissue:                   out         std_logic := '0'
+        -------------------------------------------------------------------------------------
 
     );
 end entity ReorderBuffer;
@@ -94,7 +96,17 @@ architecture rtl of ReorderBuffer is
 
     signal ROBentryToBeWritten:                    std_logic_vector(width-1 downto 0) := (others => '0');
     signal ALUentryToBeWritten:                    std_logic_vector(41 downto 0) := (others => '0');
-
+    signal ROBissue:                               std_logic := '0';
+    
+    signal opcode:          std_logic_vector(4 downto 0) := (others => '0');
+    signal opcodeType:      std_logic_vector(1 downto 0) := (others => '0');
+    signal src1:            std_logic_vector(2 downto 0) := (others => '0');
+    signal src2:            std_logic_vector(2 downto 0) := (others => '0');
+    signal sigValueSrc1:    std_logic_vector(15 downto 0) := (others => '0');
+    signal sigValidSrc1:    std_logic := '0';
+    signal sigValueSrc2:    std_logic_vector(15 downto 0) := (others => '0');
+    signal sigValidSrc2:    std_logic := '0';
+    signal sigDestTag:      std_logic_vector(2 downto 0) := (others => '0');
     ----------------------------------------------------------------------------
     type STATE_TYPE is (AVAILABLE, INEXECUTE, FLIGHT);  -- Define the states
     type REGISTER_STATE is array(0 to 7) of STATE_TYPE;
@@ -503,6 +515,229 @@ architecture rtl of ReorderBuffer is
 
     end commitInstruction;
     ----------------------------------------------------------------------------
+   procedure decode(        robFull:            in std_logic;
+                            aluRsFull:          in std_logic;
+                            memRsFull:          in std_logic;
+                            instruction:        in std_logic_vector(15 downto 0);
+                            immediateValue:     in std_logic_vector(15 downto 0);
+                            lastStore:          in std_logic_vector(2 downto 0);
+                            lastStoreValid:     in std_logic;
+                            src1state:          in std_logic_vector(1 downto 0);
+                            src1tag:            in std_logic_vector(2 downto 0);
+                            rsDestName:         in std_logic_vector(2 downto 0);
+                            regSrc1value:       in std_logic_vector(15 downto 0);
+                            robSrc1value:       in std_logic_vector(15 downto 0);
+                            src2state:          in std_logic_vector(1 downto 0);
+                            src2tag:            in std_logic_vector(2 downto 0);
+                            regSrc2value:       in std_logic_vector(15 downto 0);
+                            robSrc2value:       in std_logic_vector(15 downto 0);
+                            rsAluValid:         out std_logic;
+                            rsAluInstruction:   out std_logic_vector(41 downto 0);
+                            rsMemValid:         out std_logic;
+                            rsMemInstruction:   out std_logic_vector(28 downto 0);
+                            robValid:           out std_logic;
+                            robInstruction:     out std_logic_vector(48 downto 0);
+                            outSrc1:            out std_logic_vector(2 downto 0);
+                            outSrc2:            out std_logic_vector(2 downto 0);
+                            instQueueEnable:    out std_logic;
+                            instQueueMode:      out std_logic          )is
+                    
+    --for looping
+    variable opcode:          std_logic_vector(4 downto 0) := (others => '0');
+    variable opcodeType:      std_logic_vector(1 downto 0) := (others => '0');
+    variable src1:            std_logic_vector(2 downto 0) := (others => '0');
+    variable src2:            std_logic_vector(2 downto 0) := (others => '0');
+    
+    variable valueSrc1:   std_logic_vector(15 downto 0);
+    variable validSrc1:   std_logic := '0';
+    variable valueSrc2:   std_logic_vector(15 downto 0);
+    variable validSrc2:   std_logic := '0';
+    variable destTag:     std_logic_vector(2 downto 0);
+    variable waitingTag:  std_logic_vector(2 downto 0);
+    variable setZeroSrc:  std_logic;
+
+    begin
+        robValid := '0';
+        rsAluValid := '0';
+        rsMemValid := '0';
+        setZeroSrc := '0';
+        waitingTag := (others => '0');
+        valueSrc1 := (others => '0');
+        validSrc1 := '0';
+        valueSrc2 := (others => '0');
+        validSrc2 := '0';
+        destTag := (others => '0');
+
+        opcode := instruction(15 downto 11);
+        opcodeType := instruction(15 downto 14);
+        src1 := instruction (10 downto 8);
+        src2 := instruction (7 downto 5);
+        robInstruction(47 downto 43) := opcode;
+        robInstruction(48) := '1';
+        robInstruction(3 downto 1) := "000";
+        destTag := src1;
+        
+        if (src1state = "00") then
+            valueSrc1 := regSrc1value;
+            validSrc1 := '1';
+        elsif (src1state = "01") then
+            valueSrc1(15 downto 13) := src1tag;
+            valueSrc1(12 downto 0) := (others => '0');
+            validSrc1 := '0';
+        elsif (src1state = "10") then
+            valueSrc1 := robSrc1value;
+            validSrc1 := '1';
+        end if;
+
+        if (src2state = "00") then
+            valueSrc2 := regSrc2value;
+            validSrc2 := '1';
+        elsif (src2state = "01") then
+            valueSrc2(15 downto 13) := src2tag;
+            valueSrc2(12 downto 0) := (others => '0');
+            validSrc2 := '0';
+        elsif (src2state = "10") then
+            valueSrc2 := robSrc2value;
+            validSrc2 := '1';
+        end if;
+
+        if (opcodeType = "00") then -- in will have the value of the port
+            if (opcode /= NOP_OPCODE and opcode /= IN_OPCODE and opcode /= OUT_OPCODE) then
+                rsAluValid := '1';
+                setZeroSrc := '1';
+            end if;
+            validSrc2 := '0';
+            valueSrc2 := (others => '0');
+            robValid := '1';    -- 00 instruction never stall
+            if (opcode = NOP_OPCODE) then
+                valueSrc1 := (others => '0');
+                validSrc1 := '0';
+                valueSrc2 := (others => '0');
+                validSrc2 := '0';
+                destTag := (others => '0');
+                robInstruction(1 downto 0) := (others => '1'); --set done bit
+            elsif (opcode = IN_OPCODE) then --remember adding value at decode stage
+                valueSrc1 := (others => '0'); --will not be zeros will be post value
+                validSrc1 := '0';
+            elsif(opcode = OUT_OPCODE)then
+                valueSrc2 := (others => '0');
+                validSrc2 := '0';
+            end if;
+        elsif (opcodeType = "01") then
+            setZeroSrc := '1';
+            if (opcode = SHR_OPCODE or opcode = SHL_OPCODE) then
+                -- stall <= '1';
+                instQueueMode := '1';
+                valueSrc2 := immediateValue;
+                validSrc2 := '1';
+            else
+                rsAluValid := '1';
+                robValid := '1';    -- only SHR and SHL stall
+            end if;
+        elsif (opcodeType = "10") then
+            if (opcode /= STD_OPCODE) then
+                validSrc2 := '0';
+                valueSrc2 := (others => '0');
+            end if;
+
+            if (opcode = LDD_OPCODE) then
+                rsMemValid := '1';
+                setZeroSrc := '1'; --not really needed
+                if (lastStoreValid = '1') then
+                    validSrc1 := '0';
+                    valueSrc1(2 downto 0) := (others => '0');
+                    waitingTag := lastStore;
+                    valueSrc1(15 downto 3) := (others => '0');
+                else
+                    validSrc1 := '1';
+                    valueSrc1 := (others => '0');
+                end if;
+            end if;
+
+            if (opcode = LDM_OPCODE) then
+                robValid := '1';    -- only LDM Stalls
+                setZeroSrc := '1';
+                instQueueMode := '1';
+                valueSrc2 := immediateValue;
+                validSrc2 := '1';
+            end if;
+
+            if (opcode = POP_OPCODE) then
+                validSrc1 := '0';
+                valueSrc1 := (others => '0');
+            elsif (opcode = LDD_OPCODE) then
+                validSrc1 := '0';
+                valueSrc1 := (others => '0');
+            -- elsif (opcode = LDM_OPCODE) then
+            --     -- stall <= '1';
+            --     setZeroSrc := '1';
+            end if;
+        elsif (opcodeType = "11") then
+            robValid := '1';    -- 11 isntructions never stall --malosh lazma
+            if (opcode = RET_OPCODE or opcode = RTI_OPCODE) then
+                valueSrc1 := (others => '0');
+                validSrc1 := '0';
+                valueSrc2 := (others => '0');
+                validSrc2 := '0';
+                destTag := (others => '0');
+                robInstruction(6 downto 1) := (others => '0'); --all except for the opcode and busy
+            else
+                if (src1state = "00") then
+                    valueSrc2 := regSrc1value;
+                    validSrc2 := '1';
+                elsif (src1state = "01") then
+                    valueSrc2(15 downto 13) := src1tag;
+                    valueSrc2(12 downto 0) := (others => '0');
+                    validSrc2 := '0';
+                elsif (src1state = "10") then
+                    valueSrc2 := robSrc1value;
+                    validSrc2 := '1';
+                end if;
+
+                -- robInstruction(42 downto 26) <= (others => '0');
+                valueSrc1 := (others => '0');
+                validSrc1 := '0';
+            end if;
+        end if;
+
+
+        robInstruction(9 downto 7) := destTag; --dest register ya3ny
+        robInstruction(6 downto 4) := waitingTag;
+        if(setZeroSrc = '1')then
+            robInstruction(0) := '0';
+            robInstruction(25 downto 10) := (others => '0');
+            robInstruction(26) := '0';
+            robInstruction(42 downto 27) := (others => '0');
+        else
+            robInstruction(0) := validSrc2;
+            robInstruction(25 downto 10) := valueSrc2;
+            robInstruction(26) := validSrc1;
+            robInstruction(42 downto 27) := valueSrc1;
+        end if;
+        
+        rsAluInstruction(2 downto 0) := rsDestName;
+        rsAluInstruction(3) := validSrc2;
+        rsAluInstruction(19 downto 4) := valueSrc2;
+        rsAluInstruction(20) := validSrc1;
+        rsAluInstruction(36 downto 21) := valueSrc1;
+        rsAluInstruction(41 downto 37) := opcode;
+
+        rsMemInstruction(2 downto 0) := rsDestName;
+        rsMemInstruction(3) := validSrc2;
+        rsMemInstruction(19 downto 4) := valueSrc2;
+        rsMemInstruction(20) := validSrc1;
+        rsMemInstruction(23 downto 21) := valueSrc1(2 downto 0);
+        rsMemInstruction(28 downto 24) := opcode;
+
+        --sigValueSrc1 <= valueSrc1;
+        --sigValidSrc1 <= validSrc1;
+        --sigValueSrc2 <= valueSrc2;
+        --sigValidSrc2 <= validSrc2;
+        --sigDestTag   <= destTag;
+        
+    
+    end decode;
+    ----------------------------------------------------------------------------
     procedure resolveLoad(  signal myTag:           in          std_logic_vector(2 downto 0);      
                             signal q:               inout       qType;
                             signal readPointer:     in          std_logic_vector(2 downto 0);
@@ -679,7 +914,9 @@ begin
         variable    destRegisterGotValueV:        boolean := false;
         variable    lastStoreV:                   std_logic_vector(2 downto 0);
         variable    lastStoreValidV:              std_logic := '0';
+    ------decoding-----------------------------------------------------------------------
     begin
+
         inp := q(to_integer(unsigned(readPointer)));
 
         if (reset = '1') then 
@@ -877,7 +1114,13 @@ begin
 
         --------------------------------------------------------------------
         --Decoding
-        elsif(fakes = '1' and instQueueWritten'event and instQueueWritten = '1') then
+        elsif(instQueueWritten'event and instQueueWritten = '1') then
+
+
+
+
+
+
 
             --May god be with you;
             report "Ramadan Kareem";
@@ -898,9 +1141,6 @@ begin
 
         end if;
         --------------------------------------------------------------------
-        if(reset = '0') then 
-            fakes <= '1';
-        end if;
     end process;
     
 end architecture rtl;

@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("MEMORYoutput.txt","w+")
+outFile = open("BRANCHoutput.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -89,7 +89,7 @@ with open(inputFileName) as f:
             register1 = line.split(',')[0]
             if (instruction == 'LDM') or (instruction == 'SHR') or (instruction == 'SHL'):
                 number = int(line.split(',')[1])
-                line2 = opcode[instruction] +registers[register1]
+                line2 = opcode[instruction] + registers[register1]
                 line2 = line2 [::-1]
                 line2 = line2.zfill(16)
                 line2 = line2 [::-1]
@@ -99,7 +99,10 @@ with open(inputFileName) as f:
                 outFile.write("\n")
             else:     # 2 operand 
                 register2 = line.split(',')[1]
-                line = opcode[instruction] + registers[register1] + registers[register2]
+                if instruction == 'SUB':
+                    line = opcode[instruction] + registers[register1] + registers[register2]
+                else:
+                    line = opcode[instruction] + registers[register2] + registers[register1]
                 line = line [::-1]
                 line = line.zfill(16)
                 line = line [::-1]
@@ -124,3 +127,4 @@ with open(inputFileName) as f:
             outFile.write(line)
             outFile.write("\n")
         mynum += 1
+

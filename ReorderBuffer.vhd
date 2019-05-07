@@ -962,6 +962,9 @@ begin
 
                 writePointer <= writePointer + 1;
 
+                if(writePointer + 1 = readPointer) then 
+                    ROBFullSignal <= '1';
+                end if;
             end if;
 
         elsif (clk'event and clk = '0') then

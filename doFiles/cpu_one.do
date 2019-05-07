@@ -13,7 +13,10 @@ sim:/cpu/ramOut \
 sim:/cpu/ALUinstructionIn \
 sim:/cpu/rob/readPointer \
 sim:/cpu/rob/writePointer \
-sim:/cpu/rob/instruction
+sim:/cpu/rob/instruction \
+sim:/cpu/arithUnit/reservationStations/busies \
+sim:/cpu/arithUnit/reservationStations/readies \
+sim:/cpu/arithUnit/reservationStations/outEnables
 mem load -i /home/abdo/Desktop/SuperScalerProcessor/ONEoutput.txt -format binary /cpu/insRam/ram
 force -freeze sim:/cpu/reset 2#1 0
 force -freeze sim:/cpu/clk 0 0, 1 {50 ps} -r 100

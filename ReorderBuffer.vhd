@@ -89,6 +89,7 @@ architecture rtl of ReorderBuffer is
     signal lastStoreSignal:              std_logic_vector(2 downto 0) := (others => '0');
     signal lastStoreValidSignal:         std_logic := '0';
 
+
     ----------------------------------------------------------------------------
     --Decoding circuit
     signal ROBentryToBeWritten:                    std_logic_vector(width-1 downto 0) := (others => '0');
@@ -410,12 +411,12 @@ architecture rtl of ReorderBuffer is
             --Memory instructions
 
             if (entryOpCode = POP_OPCODE) then
-                if(ValueValid(entry) = '1')then
+                if(Done(entry) = '1')then
                     commited := true;
                     destRegister := DestinationRegister(entry);
                     registerWriteEnable := '1';
                     commitPop := '1';
-                elsif(Done(entry) = '0') then
+                else
                     isPop := '1';
                     entry(1) := '1';
                 end if;
@@ -871,7 +872,6 @@ architecture rtl of ReorderBuffer is
 
     end resolveLoad;
     ----------------------------------------------------------------------------
-    signal fakes:           std_logic := '0';
 begin
     --outputRS <= q(to_integer(unsigned(readPointer)));
     opCodeSignal <= getOpCode(q(to_integer(unsigned(readPointer))));
@@ -882,6 +882,9 @@ begin
     ROBEmptySignal <= '1' when (readPointer = writePointer and ROBFullSignal = '0')
                     else '0';
 
+    portReadEnableOut <= '1' when instruction(31 downto 28) = IN_OPCODE
+                    else '0';
+
     outputValueOut <= outputValueSignal;
     registerWriteEnableOut <= registerWriteEnableSignal;
     memoryWriteEnableOut <= memoryWriteEnableSignal;
@@ -889,95 +892,6 @@ begin
     pcWriteOut <= pcWriteEnableSignal;
     isPushOut <= isPushSignal;
     isPopOut <= isPopSignal;
-
-    ----------------------------------------------------------------------------
-    --Decoding
-    --firstSourceRegister <= instruction(26 downto 24);
-    --secondSourceRegister <= instruction(23 downto 21);
-
-    --firstSourceInt <= to_integer(unsigned(instruction(26 downto 24)));
-    --secondSourceInt <= to_integer(unsigned(instruction(23 downto 21)));
-
-    --firstSourceValueDecoded <= firstSourceValue when registerState(firstSourceInt) = AVAILABLE
-    --                        else q(to_integer(unsigned(waitingROB(firstSourceInt))))(42 downto 27) when registerState(firstSourceInt) = FLIGHT
-    --                        else waitingROB(firstSourceInt) & (11 downto 0 => '0') when registerState(firstSourceInt) = INEXECUTE;
-
-
-    --secondSourceValueDecoded <= secondSourceValue when registerState(secondSourceInt) = AVAILABLE
-    --                        else q(to_integer(unsigned(waitingROB(secondSourceInt))))(42 downto 27) when registerState(secondSourceInt) = FLIGHT
-    --                        else waitingROB(secondSourceInt) & (11 downto 0 => '0') when registerState(secondSourceInt) = INEXECUTE;
-
-
-    ----NOP
-    --ROBEntry(48) <= '1'
-    ----Opcode
-    --ROBEntry(47 downto 43) <= instruction(31 downto 27);
-    ----Value bit
-    --ROBEntry(42 downto 27) <= inPort when instruction(31 downto 27) = IN_OPCODE
-    --                    else  
-
-
-    ----------------------------------------------------------------------------
-    --process(clk,reset)
-    --variable l: integer;
-    --variable r: integer;
-    
-    --begin
-
-    --    l := to_integer(unsigned(readPointer));
-    --    r := to_integer(unsigned(writePointer-1));
-       
-    --    while(ROBEmptySignal = '0') loop
-    --        --setDone(q(l)); 
-    --        report "R=";   
-    --        report integer'image(r);
-
-    --        if (l=r) then
-    --            exit;
-    --        end if;
-
-    --        if( r = 0 ) then
-    --            r := 7;
-    --        else
-    --            r := r - 1;
-    --        end if;
-
-           
-
-    --    end loop;
-
-    --	if(reset = '1') then
-    --		q <= (others => (others => '0'));
-    --		readPointer <= (others => '0');
-    --		ReadPointerRotated <= '0';
-    --		writePointer <= (others => '0');
-    --		writePointerRotated <= '0';
-    --		ROBFullSignal <= '0';
-    --		--ROBEmptySignal <= '1';
-
-    --   	elsif (clk'event and clk = '1') then
-    --   		--read from decoding circuit
-    --   		if (ROBFullSignal = '0') then
-    --   			q(to_integer(unsigned(writePointer))) <= instruction;
-    --   			writePointer <= writePointer + 1;
-
-    --   			if (writePointer = length-1) then
-    --   				writePointerRotated <= not writePointerRotated;
-    --   			end if;
-
-    --   			if (writePointer + 1 = readPointer) then
-    --   				ROBFullSignal <= '1';
-    --   			else
-    --   				ROBFullSignal <= '0';
-    --   			end if;
-
-    --   		end if;
-
-    --   --elsif (clk'event and clk = '1') then
-    --   		--some thing to be done
-
-    --  	end if;
-    --end process;
     
 
     process (clk,reset,instQueueWritten)
@@ -1022,29 +936,33 @@ begin
             --ROBEmptySignal <= '1';
 
         elsif(clk'event and clk = '1') then
+        
+            if (ROBissue = '1') then 
 
-            inp := ROBentryToBeWritten;
+                inp := ROBentryToBeWritten;
 
-            report toString(ROBentryToBeWritten);
+                report toString(ROBentryToBeWritten);
 
-            inputParser(
-                        entry => inp,
-                        q => q,
-                        readPointer => readPointer,
-                        writePointer => writePointer,
-                        flags => flagsIn,
-                        ROBEmptySignal => ROBEmptySignal,
-                        lastStore => lastStoreV,
-                        lastStoreValid => lastStoreValidV );
+                inputParser(
+                            entry => inp,
+                            q => q,
+                            readPointer => readPointer,
+                            writePointer => writePointer,
+                            flags => flagsIn,
+                            ROBEmptySignal => ROBEmptySignal,
+                            lastStore => lastStoreV,
+                            lastStoreValid => lastStoreValidV );
 
-            if (lastStoreValidV = '1') then 
-                lastStoreSignal <= lastStoreV;
-                lastStoreValidSignal <= '1';
+                if (lastStoreValidV = '1') then 
+                    lastStoreSignal <= lastStoreV;
+                    lastStoreValidSignal <= '1';
+                end if;
+
+                q(to_integer(unsigned(writePointer))) <= inp;
+
+                writePointer <= writePointer + 1;
+
             end if;
-
-            q(to_integer(unsigned(writePointer))) <= inp;
-
-            writePointer <= writePointer + 1;
 
         elsif (clk'event and clk = '0') then
             ALUissue <= '0';

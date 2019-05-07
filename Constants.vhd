@@ -379,11 +379,10 @@ end isAlueRSinstruction;
 function writesBack(opCode:   std_logic_vector(4 downto 0))
                             return boolean is
 begin
-    if(opCode = NOT_OPCODE or opCode = SETC_OPCODE
-     or opCode = INC_OPCODE or opCode = DEC_OPCODE
-     or opCode = IN_OPCODE or isTypeOne(opCode)
-     or opCode = POP_OPCODE or opCode = LDD_OPCODE
-     or opCode = LDM_OPCODE) then
+    if(opCode = NOT_OPCODE or opCode = INC_OPCODE
+     or opCode = DEC_OPCODE or opCode = IN_OPCODE
+     or isTypeOne(opCode) or opCode = POP_OPCODE
+     or opCode = LDD_OPCODE or opCode = LDM_OPCODE) then
         return true;
     else
         return false;

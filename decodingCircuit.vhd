@@ -73,7 +73,7 @@ architecture rtl of decodingCircuit is
         variable validSrc2:   std_logic := '0';
         variable destTag:     std_logic_vector(2 downto 0);
         variable waitingTag:  std_logic_vector(2 downto 0);
-        variable setZeroSrc:   std_logic;
+        variable setZeroSrc:  std_logic;
         begin
             robValid <= '0';
             rsAluValid <= '0';
@@ -120,9 +120,10 @@ architecture rtl of decodingCircuit is
                 validSrc2 := '1';
             end if;
 
-            if (opcodeType = "00") then
+            if (opcodeType = "00") then -- in will have the value of the port
                 if (opcode /= NOP_OPCODE and opcode /= IN_OPCODE and opcode /= OUT_OPCODE) then
                     rsAluValid <= '1';
+                    setZeroSrc := '1';
                 end if;
                 validSrc2 := '0';
                 valueSrc2 := (others => '0');
@@ -135,8 +136,11 @@ architecture rtl of decodingCircuit is
                     destTag := (others => '0');
                     robInstruction(1 downto 0) <= (others => '1'); --set done bit
                 elsif (opcode = IN_OPCODE) then --remember adding value at decode stage
-                    valueSrc1 := (others => '0');
+                    valueSrc1 := (others => '0'); --will not be zeros will be post value
                     validSrc1 := '0';
+                elsif(opcode = OUT_OPCODE)then
+                    valueSrc2 := (others => '0');
+                    validSrc2 := '0';
                 end if;
             elsif (opcodeType = "01") then
                 setZeroSrc := '1';
@@ -157,7 +161,7 @@ architecture rtl of decodingCircuit is
 
                 if (opcode = LDD_OPCODE) then
                     rsMemValid <= '1';
-                    setZeroSrc := '1';
+                    setZeroSrc := '1'; --not really needed
                     if (lastStoreValid = '1') then
                         validSrc1 := '0';
                         valueSrc1(2 downto 0) := (others => '0');
@@ -169,7 +173,7 @@ architecture rtl of decodingCircuit is
                     end if;
                 end if;
 
-                if (opcode /= LDM_OPCODE) then
+                if (opcode = LDM_OPCODE) then
                     robValid <= '1';    -- only LDM Stalls
                     setZeroSrc := '1';
                     instQueueMode <= '1';
@@ -183,19 +187,19 @@ architecture rtl of decodingCircuit is
                 elsif (opcode = LDD_OPCODE) then
                     validSrc1 := '0';
                     valueSrc1 := (others => '0');
-                elsif (opcode = LDM_OPCODE) then
-                    -- stall <= '1';
-                    setZeroSrc := '1';
+                -- elsif (opcode = LDM_OPCODE) then
+                --     -- stall <= '1';
+                --     setZeroSrc := '1';
                 end if;
             elsif (opcodeType = "11") then
-                robValid <= '1';    -- 11 isntructions never stall
+                robValid <= '1';    -- 11 isntructions never stall --malosh lazma
                 if (opcode = RET_OPCODE or opcode = RTI_OPCODE) then
                     valueSrc1 := (others => '0');
                     validSrc1 := '0';
                     valueSrc2 := (others => '0');
                     validSrc2 := '0';
                     destTag := (others => '0');
-                    robInstruction(6 downto 1) <= (others => '0');
+                    robInstruction(6 downto 1) <= (others => '0'); --all except for the opcode and busy
                 else
                     if (src1state = "00") then
                         valueSrc2 := regSrc1value;
@@ -255,8 +259,20 @@ architecture rtl of decodingCircuit is
             --     robInstruction(0) <= validSrc2;
             -- end if;
             
-            robInstruction(9 downto 7) <= destTag;
+            robInstruction(9 downto 7) <= destTag; --dest register ya3ny
             robInstruction(6 downto 4) <= waitingTag;
+            if(setZeroSrc = '1')then
+                robInstruction(0) <= '0';
+                robInstruction(25 downto 10) <= (others => '0');
+                robInstruction(26) <= '0';
+                robInstruction(42 downto 27) <= (others => '0');
+            else
+                robInstruction(0) <= validSrc2;
+                robInstruction(25 downto 10) <= valueSrc2;
+                robInstruction(26) <= validSrc1;
+                robInstruction(42 downto 27) <= valueSrc1;
+            end if;
+            
             rsAluInstruction(2 downto 0) <= rsDestName;
             rsAluInstruction(3) <= validSrc2;
             rsAluInstruction(19 downto 4) <= valueSrc2;

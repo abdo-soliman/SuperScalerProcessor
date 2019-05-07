@@ -670,6 +670,14 @@ architecture rtl of ReorderBuffer is
                 rsAluValid <= '1';
                 setZeroSrc := '1';
             end if;
+
+            if (opcode = SETC_OPCODE or opcode = CLC_OPCODE) then
+                validSrc1 := '1';
+                validSrc2 := '1';
+            end if;
+            if (opcode = NOT_OPCODE or opcode = INC_OPCODE or opcode = DEC_OPCODE) then
+                validSrc2 := '1';
+            end if;
             -- validSrc2 := '0';
             -- valueSrc2 := (others => '0');
             robValid <= '1';    -- 00 instruction never stall

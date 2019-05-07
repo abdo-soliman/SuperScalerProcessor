@@ -158,6 +158,9 @@ architecture mixed of memReservationStations is
                                 -- valid <= '0';
                             end if;
                         end if;
+                        if (readies(i) /= '1') then
+                            outEnables(i) <= '0';
+                        end if;
                     end loop;
                 end if;
             end if;

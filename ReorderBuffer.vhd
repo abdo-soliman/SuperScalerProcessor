@@ -8,15 +8,16 @@ use work.constants.all;
 --length n and width m
 
 entity ReorderBuffer is
-    generic ( length: integer := 16;
+    generic ( length: integer := 8;
     		 width: integer  := 49 
     		 );
     port (
         instruction:	in      	std_logic_vector(31 downto 0) := (others => '0');
+        instQueueWritten: in        std_logic := '0';
         aluValue:       in          std_logic_vector(15 downto 0) := (others => '0');
-        aluTag:        in          std_logic_vector(3 downto 0) := (others => '0');
+        aluTag:        in          std_logic_vector(2 downto 0) := (others => '0');
         mememoryValue:  in          std_logic_vector(15 downto 0) := (others => '0');
-        memoryTag:     in          std_logic_vector(3 downto 0) := (others => '0');
+        memoryTag:     in          std_logic_vector(2 downto 0) := (others => '0');
         aluTagValid:    in          std_logic := '0';
         memoryTagValid: in          std_logic := '0';
         flagsIn:          in          std_logic_vector(2 downto 0) := (others => '0'); 
@@ -40,7 +41,7 @@ entity ReorderBuffer is
         isPopOut:               out        std_logic := '0';
         flagsOut:               out        std_logic_vector (2 downto 0) := (others => '0');
         --may be removed when decoding circuit is in @Ahmed
-        lastStore:              out        std_logic_vector(3 downto 0) := (others => '0'); 
+        lastStore:              out        std_logic_vector(2 downto 0) := (others => '0'); 
         lastStoreValid:         out        std_logic := '0';
         ------------------------------------------------------------------------
         --Decoding signals out
@@ -48,8 +49,10 @@ entity ReorderBuffer is
         secondSourceRegister:         out        std_logic_vector(2 downto 0) := (others => '0');
         firstSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
         secondSourceValue:             in         std_logic_vector(15 downto 0) := (others => '0');
-        outputRS: 		out     	std_logic_vector(width-1 downto 0) := (others => '0');
-        memIn:          in                   std_logic_vector(15 downto 0)
+        instQueueShiftEnable:           out        std_logic := '0';
+        instQueueShiftMode:           out        std_logic := '0';
+        instructionToALU: 		    out     	std_logic_vector(41 downto 0) := (others => '0');
+        ALUissue:                   out         std_logic := '0'
         --------------------------------------------------------------------------------
 
     );
@@ -58,9 +61,9 @@ end entity ReorderBuffer;
 architecture rtl of ReorderBuffer is
 	type qType is array(0 to length-1) of std_logic_vector(width-1 downto 0);
     signal q:	 					qType := (others => (others => '0'));
-    signal readPointer: 			std_logic_vector(3 downto 0) := (others => '0');
+    signal readPointer: 			std_logic_vector(2 downto 0) := (others => '0');
     signal readPointerRotated:		std_logic := '0';
-    signal writePointer: 			std_logic_vector(3 downto 0) := (others => '0');
+    signal writePointer: 			std_logic_vector(2 downto 0) := (others => '0');
     signal writePointerRotated:		std_logic := '0';
     signal ROBFullSignal: 			std_logic := '0';
     signal ROBEmptySignal: 			std_logic := '1';
@@ -77,7 +80,7 @@ architecture rtl of ReorderBuffer is
     signal isPushSignal:                 std_logic := '0';
     signal isPopSignal:                  std_logic := '0';
 
-    signal lastStoreSignal:              std_logic_vector(3 downto 0) := (others => '0');
+    signal lastStoreSignal:              std_logic_vector(2 downto 0) := (others => '0');
     signal lastStoreValidSignal:         std_logic := '0';
 
     ----------------------------------------------------------------------------
@@ -89,12 +92,13 @@ architecture rtl of ReorderBuffer is
     signal secondSourceInt:                       integer := 0;
     signal valueValidDecoded:                   std_logic := '0';
 
-
+    signal ROBentryToBeWritten:                    std_logic_vector(width-1 downto 0) := (others => '0');
+    signal ALUentryToBeWritten:                    std_logic_vector(41 downto 0) := (others => '0');
 
     ----------------------------------------------------------------------------
     type STATE_TYPE is (AVAILABLE, INEXECUTE, FLIGHT);  -- Define the states
     type REGISTER_STATE is array(0 to 7) of STATE_TYPE;
-    type WAITING_ROB is array(0 to 7) of std_logic_vector(3 downto 0);
+    type WAITING_ROB is array(0 to 7) of std_logic_vector(2 downto 0);
 
     signal registerState:   REGISTER_STATE := (others => AVAILABLE);
     signal waitingROB:      WAITING_ROB := (others => (others => '0'));
@@ -105,9 +109,9 @@ architecture rtl of ReorderBuffer is
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
                                  signal    aluValue:          in          std_logic_vector(15 downto 0);
-                                 signal    aluTag:            in          std_logic_vector(3 downto 0) ;
+                                 signal    aluTag:            in          std_logic_vector(2 downto 0) ;
                                  signal    mememoryValue:      in          std_logic_vector(15 downto 0);
-                                 signal    memoryTag:         in          std_logic_vector(3 downto 0);
+                                 signal    memoryTag:         in          std_logic_vector(2 downto 0);
                                  signal    aluTagValid:       in          std_logic;
                                  variable  index:             in          integer;
                                  signal    memoryTagValid:    in          std_logic;
@@ -121,8 +125,8 @@ architecture rtl of ReorderBuffer is
         variable memoryTagInt: integer;
 
         --for store case, I'm sad :(
-        variable firstTag: std_logic_vector(3 downto 0);
-        variable secondTag: std_logic_vector(3 downto 0);
+        variable firstTag: std_logic_vector(2 downto 0);
+        variable secondTag: std_logic_vector(2 downto 0);
         begin
             aluTagInt  := to_integer(unsigned(aluTag));
             memoryTagInt := to_integer(unsigned(memoryTag));
@@ -282,13 +286,13 @@ architecture rtl of ReorderBuffer is
             end if;
         end updateTagAluMemory;
     ----------------------------------------------------------------------------
-    procedure inputParser(variable    entry:          inout       std_logic_vector(width-1 downto 0);
-                          signal       q:			    inout	    qType;
-                          signal readPointer: 		in	        std_logic_vector(3 downto 0);
-                          signal writePointer: 		in	        std_logic_vector(3 downto 0);
+    procedure inputParser(variable    entry:        inout       std_logic_vector(width-1 downto 0);
+                          signal       q:			in	    qType;
+                          signal readPointer: 		in	        std_logic_vector(2 downto 0);
+                          signal writePointer: 		in	        std_logic_vector(2 downto 0);
                           signal flags:             in          std_logic_vector(2 downto 0);
                           signal    ROBEmptySignal:  in          std_logic;
-                          variable    lastStore:      out          std_logic_vector(3 downto 0);
+                          variable    lastStore:      out          std_logic_vector(2 downto 0);
                           variable    lastStoreValid:  out         std_logic       )is
                     
     --for looping
@@ -322,7 +326,7 @@ architecture rtl of ReorderBuffer is
 
                 if (Done(q(r)) = '0' and affectsFlags(loopOpCode) ) then
 
-                    entry(6 downto 3) := std_logic_vector(to_unsigned(r , 4));
+                    entry(6 downto 4) := std_logic_vector(to_unsigned(r , 3));
                     entry(2) := '0'; --Execute/wait bit is not valid    
                     temp := 1;
                     exit;   
@@ -334,7 +338,7 @@ architecture rtl of ReorderBuffer is
                 end if;
 
                 if( r = 0 ) then
-                    r := 15;
+                    r := 7;
                 else
                     r := r - 1;
                 end if;
@@ -386,12 +390,12 @@ architecture rtl of ReorderBuffer is
         registerWriteEnable := '0';
         memoryWriteEnable := '0';
         portWriteEnable := '0';
+        portReadEnable := '0';
         pcWriteEnable := '0';
         isPush := '0';
         isPop := '0';
         commitPop := '0';
         isStore := '0';
-        portReadEnable := '0';
         commited := false;
 
         if (isStackFamily(entryOpCode) or entryOpCode = STD_OPCODE) then
@@ -499,10 +503,10 @@ architecture rtl of ReorderBuffer is
 
     end commitInstruction;
     ----------------------------------------------------------------------------
-    procedure resolveLoad(  signal myTag:           in          std_logic_vector(3 downto 0);      
+    procedure resolveLoad(  signal myTag:           in          std_logic_vector(2 downto 0);      
                             signal q:               inout       qType;
-                            signal readPointer:     in          std_logic_vector(3 downto 0);
-                            signal writePointer:    in          std_logic_vector(3 downto 0);
+                            signal readPointer:     in          std_logic_vector(2 downto 0);
+                            signal writePointer:    in          std_logic_vector(2 downto 0);
                             signal ROBEmptySignal:  in          std_logic)is
                     
     --for looping
@@ -530,7 +534,7 @@ architecture rtl of ReorderBuffer is
             end if;
 
             if( r = 0 ) then
-                r := 15;
+                r := 7;
             else
                 r := r - 1; 
             end if;
@@ -539,8 +543,9 @@ architecture rtl of ReorderBuffer is
 
     end resolveLoad;
     ----------------------------------------------------------------------------
+    signal fakes:           std_logic := '0';
 begin
-    outputRS <= q(to_integer(unsigned(readPointer)));
+    --outputRS <= q(to_integer(unsigned(readPointer)));
     opCodeSignal <= getOpCode(q(to_integer(unsigned(readPointer))));
     --ROBFullSignal <= '1' when tail = head
     --				else '0';
@@ -562,20 +567,20 @@ begin
 
     ----------------------------------------------------------------------------
     --Decoding
-    firstSourceRegister <= instruction(26 downto 24);
-    secondSourceRegister <= instruction(23 downto 21);
+    --firstSourceRegister <= instruction(26 downto 24);
+    --secondSourceRegister <= instruction(23 downto 21);
 
-    firstSourceInt <= to_integer(unsigned(instruction(26 downto 24)));
-    secondSourceInt <= to_integer(unsigned(instruction(23 downto 21)));
+    --firstSourceInt <= to_integer(unsigned(instruction(26 downto 24)));
+    --secondSourceInt <= to_integer(unsigned(instruction(23 downto 21)));
 
-    firstSourceValueDecoded <= firstSourceValue when registerState(firstSourceInt) = AVAILABLE
-                            else q(to_integer(unsigned(waitingROB(firstSourceInt))))(42 downto 27) when registerState(firstSourceInt) = FLIGHT
-                            else waitingROB(firstSourceInt) & (11 downto 0 => '0') when registerState(firstSourceInt) = INEXECUTE;
+    --firstSourceValueDecoded <= firstSourceValue when registerState(firstSourceInt) = AVAILABLE
+    --                        else q(to_integer(unsigned(waitingROB(firstSourceInt))))(42 downto 27) when registerState(firstSourceInt) = FLIGHT
+    --                        else waitingROB(firstSourceInt) & (11 downto 0 => '0') when registerState(firstSourceInt) = INEXECUTE;
 
 
-    secondSourceValueDecoded <= secondSourceValue when registerState(secondSourceInt) = AVAILABLE
-                            else q(to_integer(unsigned(waitingROB(secondSourceInt))))(42 downto 27) when registerState(secondSourceInt) = FLIGHT
-                            else waitingROB(secondSourceInt) & (11 downto 0 => '0') when registerState(secondSourceInt) = INEXECUTE;
+    --secondSourceValueDecoded <= secondSourceValue when registerState(secondSourceInt) = AVAILABLE
+    --                        else q(to_integer(unsigned(waitingROB(secondSourceInt))))(42 downto 27) when registerState(secondSourceInt) = FLIGHT
+    --                        else waitingROB(secondSourceInt) & (11 downto 0 => '0') when registerState(secondSourceInt) = INEXECUTE;
 
 
     ----NOP
@@ -607,7 +612,7 @@ begin
     --        end if;
 
     --        if( r = 0 ) then
-    --            r := 15;
+    --            r := 7;
     --        else
     --            r := r - 1;
     --        end if;
@@ -649,7 +654,8 @@ begin
     --  	end if;
     --end process;
     
-    process (clk,reset)
+
+    process (clk,reset,instQueueWritten)
         variable    destinationRegisterV:         std_logic_vector(2 downto 0);
         variable    registerWriteEnableV:         std_logic;
         variable    outputValueV:                 std_logic_vector(15 downto 0);
@@ -664,17 +670,18 @@ begin
         variable    isStoreV:                     std_logic;
         variable    commitedV:                    boolean;
         variable    inp:                          std_logic_vector(width-1 downto 0);
-        variable    flags:                        std_logic_vector(2 downto 0);
+        variable    flagsOutV:                        std_logic_vector(2 downto 0);
         variable    loopEntry:                    std_logic_vector(width-1 downto 0);
         variable    l:                            integer;
         variable    r:                            integer;
 
         variable    destRegisterV:                std_logic_vector(2 downto 0);
         variable    destRegisterGotValueV:        boolean := false;
-        variable    lastStoreV:                   std_logic_vector(4 downto 0);
-        variable    lastStoreValidV:              std_logic;
+        variable    lastStoreV:                   std_logic_vector(2 downto 0);
+        variable    lastStoreValidV:              std_logic := '0';
     begin
         inp := q(to_integer(unsigned(readPointer)));
+
         if (reset = '1') then 
             q <= (others => (others => '0'));
             readPointer <= (others => '0');
@@ -685,33 +692,33 @@ begin
             --ROBEmptySignal <= '1';
 
         elsif(clk'event and clk = '1') then
-            --inputParser(inp,q,readPointer,writePointer,ROBEmptySignal,lastStoreV,lastStoreValidV);
-            --if (lastStoreValidV = '1') then 
-            --    lastStoreSignal <= lastStoreV;
-            --    lastStoreValidSignal <= '1';
-            --end if;
+
+            inp := ROBentryToBeWritten;
+
+            report toString(ROBentryToBeWritten);
+
+            inputParser(
+                        entry => inp,
+                        q => q,
+                        readPointer => readPointer,
+                        writePointer => writePointer,
+                        flags => flagsIn,
+                        ROBEmptySignal => ROBEmptySignal,
+                        lastStore => lastStoreV,
+                        lastStoreValid => lastStoreValidV );
+
+            if (lastStoreValidV = '1') then 
+                lastStoreSignal <= lastStoreV;
+                lastStoreValidSignal <= '1';
+            end if;
+
             q(to_integer(unsigned(writePointer))) <= inp;
 
             writePointer <= writePointer + 1;
-            --if (pcWriteEnableSignal = '1') then
-            --    pcWriteEnableSignal <= '0';
-            --end if;
-            null;
 
-
-            -- call tag alu 
-             --if(destRegisterGotValueV) then 
-             -- if(stateRegister(to_integer(unsigned(destRegisterV))) = INEXECUTE
-             --    and waitingROB(to_integer(unsigned(destRegisterV))) = writePointer) then 
-
-             --   stateRegister(to_integer(unsigned(destRegisterV))
-
-             -- end if;
-
-             
-            -- end if;
-            -- 
         elsif (clk'event and clk = '0') then
+            ALUissue <= '0';
+
             registerWriteEnableV := '0';
             memoryWriteEnableV := '0';
             portWriteEnableV := '0';
@@ -720,6 +727,8 @@ begin
             isPushV := '0';
             isPopV := '0';
             isStoreV := '0';
+            commitPopV := '0';
+            flagsOutV := (others => '0');
 
             registerWriteEnableSignal <= registerWriteEnableV;
             memoryWriteEnableSignal <= memoryWriteEnableV;
@@ -728,6 +737,7 @@ begin
             portReadEnableOut <= portReadEnableV;
             isPushSignal <= isPushV;
             isPopSignal <= isPopV;
+            flagsOut <= flagsOutV;
 
             if(ROBEmptySignal /= '1')then
                 report "Plz";
@@ -746,7 +756,7 @@ begin
                     isPopV,
                     commitPopV,
                     isStoreV,
-                    flags,
+                    flagsOutV,
                     commitedV
                     );
                 outputValueSignal <= outputValueV;
@@ -758,7 +768,7 @@ begin
                 portReadEnableOut <= portReadEnableV;
                 isPushSignal <= isPushV;
                 isPopSignal <= isPopV;
-                flagsOut <= flags;
+                flagsOut <= flagsOutV;
 
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
@@ -769,13 +779,16 @@ begin
                 if (commitedV and registerWriteEnableV = '1') then 
                     --TODO add RF Adapter
                     if (commitPopV = '1')then
-                        tempRegisters(to_integer(unsigned(destRegisterV))) <= memIn;
+                        tempRegisters(to_integer(unsigned(destRegisterV))) <= mememoryValue;
+                        outputValueSignal <= mememoryValue;
+
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = INEXECUTE
                             and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
 
                                 registerState(to_integer(unsigned(destinationRegisterV))) <= AVAILABLE;
 
                         end if;
+
                     elsif(isPopV = '0')then
                         tempRegisters(to_integer(unsigned(destRegisterV))) <= outputValueV;
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = FLIGHT
@@ -854,15 +867,40 @@ begin
                 end if;
 
                 if( r = 0 ) then
-                    r := 15;
+                    r := 7;
                 else
                     r := r - 1; 
                 end if;
 
             end loop;
+        --end if;
+
+        --------------------------------------------------------------------
+        --Decoding
+        elsif(fakes = '1' and instQueueWritten'event and instQueueWritten = '1') then
+
+            --May god be with you;
+            report "Ramadan Kareem";
+
+            ROBentryToBeWritten <= (others => '0');
+
+            ROBentryToBeWritten(47 downto 43) <= "01000";
+
+            ROBentryToBeWritten(9 downto 7) <= "001";
+
+            ALUentryToBeWritten <= (others => '0');
+
+            --ALUentryToBeWritten()
+            instructionToALU <= "010000000000000000001100010000000000011001";
+
+            ALUissue <= '1';
+
 
         end if;
-
+        --------------------------------------------------------------------
+        if(reset = '0') then 
+            fakes <= '1';
+        end if;
     end process;
     
 end architecture rtl;

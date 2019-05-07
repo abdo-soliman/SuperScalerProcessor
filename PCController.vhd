@@ -10,6 +10,8 @@ entity PCController is
 		JMPnewPC:			in std_logic_vector(n-1 downto 0) := (others => '0');
 		JMPWrite:			in std_logic 					  := '0';
 		queueFull:			in std_logic 					  := '0';
+		reset:				in std_logic 					  := '0';
+		instMemOut:			in std_logic_vector(15 downto 0)  := (others => '0');
 		newPC:				out std_logic_vector(n-1 downto 0) := (others => '0');
 		memRead:			out std_logic 					  := '0'
 	);
@@ -29,7 +31,8 @@ begin
 
 	memRead <= not queueFull;
 
-	newPC <= JMPnewPC when JMPWrite = '1'
+	newPC <= instMemOut when reset = '1'
+		else JMPnewPC when JMPWrite = '1'
 		else currentPC when queueFull = '1'
 		else incrementedPC;
 

@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity alu is
-    generic (n : natural := 8);
+    generic (n : natural := 16);
     port (
         s:          in std_logic_vector(4 downto 0);
         a:          in std_logic_vector(n-1 downto 0);
@@ -11,8 +11,7 @@ entity alu is
         f:          out std_logic_vector(n-1 downto 0);
         cout:       out std_logic;
         zero:       out std_logic;
-        negative:   out std_logic;
-        carry:      out std_logic
+        negative:   out std_logic
     );
 end alu;
 
@@ -95,7 +94,6 @@ architecture structural of alu is
             '0' when s(4 downto 3) = "01" else
             suCout;
 
-        carry <= tempCout;
         cout <= tempCout;
 
         zero <= '1' when (tempF = (n-1 downto 0 => '0')) else '0';

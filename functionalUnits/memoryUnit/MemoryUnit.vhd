@@ -9,8 +9,6 @@ entity MemoryUnit is
         clk:            in std_logic;
         enable:         in std_logic;
         mode:           in std_logic_vector(1 downto 0);
-        tag:            inout std_logic_vector(2 downto 0);
-        valid:          inout std_logic;
         address:        in std_logic_vector(15 downto 0);
         dataIn:         in std_logic_vector(15 downto 0);
         dataOut:        out std_logic_vector(15 downto 0)
@@ -21,9 +19,10 @@ architecture rtl of MemoryUnit is
     signal readWriteEnable: std_logic := '0';
     signal currentAddress:  std_logic_vector(15 downto 0) := (others => '0');
     signal sp:              std_logic_vector(15 downto 0) := SP_START;
-    signal invClk:  std_logic := not clk;
+    signal invClk:  std_logic;
 
     begin
+
         ram: entity work.DataRam
         port map (
             clk             => invClk,
@@ -33,30 +32,31 @@ architecture rtl of MemoryUnit is
             dataOut         => dataOut
         );
 
+        currentAddress <= address when mode(1) = '0' else sp + 1 when mode = "11" else sp;
+        invClk <= not clk;
+        
         process (clk, mode, address, enable)
         begin
-            invClk <= not clk;
 
             if (enable = '1') then
                 if (mode = "00") then   -- load
                     if (clk /= '0') then
                         readWriteEnable <= '0';
-                        currentAddress <= address;
+                        -- currentAddress <= address;
                     end if;
                 elsif (mode = "11") then    -- pop
                     if (clk /= '0') then
                         readWriteEnable <= '0';
-                        currentAddress <= sp + 1;
+                        -- currentAddress <= sp + 1;
                         sp <= sp + 1;
                     end if;
                 elsif (clk'event and clk = '0') then
                     if (mode = "01") then    -- store
                         readWriteEnable <= '1';
-                        currentAddress <= address;
-                        valid <= '0';
+                        -- currentAddress <= address;
                     elsif (mode = "10") then    -- push
                         readWriteEnable <= '1';
-                        currentAddress <= sp;
+                        -- currentAddress <= sp;
                         sp <= sp - 1;
                     end if;
                 end if;

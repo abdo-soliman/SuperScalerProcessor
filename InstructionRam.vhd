@@ -6,8 +6,10 @@ entity InstructionRam is
 	port(
 		readEnable:     in std_logic := '0';
 		clk:			in std_logic;
+		reset:			in std_logic := '0';
 		address :		in  std_logic_vector(15 downto 0) := (others => '0');
 		dataOut :		OUT std_logic_vector(31 downto 0) := (others => '0'));
+
 end entity InstructionRam;
 
 architecture rtl of InstructionRam is
@@ -17,9 +19,11 @@ architecture rtl of InstructionRam is
 	signal sgn : unsigned(15 downto 0);
 	begin
 		sgn <= unsigned(address);
-		process(clk,address) is
+		process(clk,address,reset) is
 			begin
-				if clk'event and clk = '1' then  
+				if(reset = '1') then
+					dataOut <= ram(0) & ram(0);
+				elsif clk'event and clk = '1' then  
 					if readEnable = '1' then
 						dataOut <= ram(to_integer(sgn)) & ram(to_integer(sgn+1));
 					end if;

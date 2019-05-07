@@ -9,94 +9,84 @@ entity arithmaticUnitIntegration is
         clk:                            in std_logic;
         issue:                          in std_logic;
         reset:                          in std_logic;
-        robStoreIssue:                  in std_logic;
-        robPushIssue:                   in std_logic;
-        robPopIssue:                    in std_logic;
-        robTag:                         in std_logic_vector(2 downto 0);
-        robAddress:                     in std_logic_vector(15 downto 0);
-        robValue:                       in std_logic_vector(15 downto 0);
-        instruction:                    in std_logic_vector(28 downto 0);
-        lastExcutedAluDestName:         in std_logic_vector(2 downto 0);
-        lastExcutedAluDestNameValue:    in std_logic_vector(15 downto 0);
-        lastExcutedMemDestName:         inout std_logic_vector(2 downto 0);
+        setFlags:                       in std_logic;
+        robFlags:                       in std_logic_vector(2 downto 0);
+        instruction:                    in std_logic_vector(41 downto 0);
+        lastExcutedAluDestName:         inout std_logic_vector(2 downto 0) := (others => '0');
+        lastExcutedAluDestNameValue:    inout std_logic_vector(15 downto 0) := (others => '0');
+        lastExcutedMemDestName:         in std_logic_vector(2 downto 0);
         lastExcutedMemDestNameValue:    in std_logic_vector(15 downto 0);
-        destTag:                        inout std_logic_vector(2 downto 0);
-        validAlu:                       in std_logic;
-        validMem:                       inout std_logic;
-        dataOut:                        out std_logic_vector(15 downto 0);
+        validAlu:                       inout std_logic := '0';
+        validMem:                       in std_logic;
+        flags:                          out std_logic_vector(2 downto 0);
         full:                           out std_logic
     );
 end entity;
 
 architecture rtl of arithmaticUnitIntegration is
-    signal mode:                std_logic_vector(1 downto 0) := (others => '0');
-    signal address:             std_logic_vector(15 downto 0) := (others => '0');
-    signal enableLoadOut:       std_logic := '1';
-    signal tempDestTag:         std_logic_vector(2 downto 0) := "ZZZ";
-    signal tempDataIn:          std_logic_vector(15 downto 0) := (others => '0');
-    signal validLoadBuffers:    std_logic := '0';
-    signal tempValidMem:        std_logic := '0';
+    signal aluOp:           std_logic_vector(4 downto 0);
+    signal op1:             std_logic_vector(15 downto 0);
+    signal op2:             std_logic_vector(15 downto 0);
+    signal flagsEnable:     std_logic;
+    signal inFlags:         std_logic_vector(2 downto 0);
+    signal outFlags:        std_logic_vector(2 downto 0);
+    signal currentFlags:    std_logic_vector(2 downto 0);
 
+    signal tempLastExcutedAluDestNameValue: std_logic_vector(15 downto 0);
     begin
-        loadBuffers: entity work.aluReservationStations
+        reservationStations: entity work.aluReservationStations
             generic map (n => 16)
             port map (
                 clk                         => clk,
                 issue                       => issue,
                 reset                       => reset,
-                outEnable                   => enableLoadOut,
                 validAlu                    => validAlu,
                 validMem                    => validMem,
-                opcode                      => instruction(28 downto 24),
-                waitingTag                  => instruction(23 downto 21),
+                opcode                      => instruction(41 downto 37),
+                tag1                        => instruction(36 downto 21),
                 tag2                        => instruction(19 downto 4),
-                waitingDone                 => instruction(20),
+                valid1                      => instruction(20),
                 valid2                      => instruction(3),
                 issueDestName               => instruction(2 downto 0),
                 lastExcutedAluDestName      => lastExcutedAluDestName,
                 lastExcutedAluDestNameValue => lastExcutedAluDestNameValue,
                 lastExcutedMemDestName      => lastExcutedMemDestName,
                 lastExcutedMemDestNameValue => lastExcutedMemDestNameValue,
-                address                     => address,
+                aluOp                       => aluOp,
+                op1                         => op1,
+                op2                         => op2,
                 full                        => full,
-                valid                       => validLoadBuffers
+                valid                       => validAlu
             );
 
-        memoryUnit: entity work.alu
+        alu: entity work.alu
+            generic map (n => 16)
             port map (
-                clk     => clk,
-                enable  => '1',
-                mode    => mode,
-                tag     => tempDestTag,
-                valid   => tempValidMem,
-                address => address,
-                dataIn  => tempDataIn,
-                dataOut => dataOut
+                s           => aluOp,
+                a           => op1,
+                b           => op2,
+                cin         => '0',
+                f           => tempLastExcutedAluDestNameValue,
+                cout        => currentFlags(2),
+                negative    => currentFlags(1),
+                zero        => currentFlags(0)
             );
 
-        process (clk, robStoreIssue, robPushIssue, robPopIssue)
-        begin
-            if (clk'event and clk = '1') then
-                enableLoadOut <= '0';
-                tempDestTag <= robTag;
-                address <= robAddress;
-                tempDataIn <= robValue;
-                if (robStoreIssue = '1') then
-                    mode <= "01";
-                    tempValidMem <= '1';
-                elsif (robPushIssue = '1') then
-                    mode <= "10";
-                    tempValidMem <= '1';
-                elsif (robPopIssue = '1') then
-                    mode <= "11";
-                    tempValidMem <= '1';
-                else
-                    mode <= "00";
-                    enableLoadOut <= '1';
-                    tempValidMem <= validLoadBuffers;
-                    tempDestTag <= lastExcutedMemDestName;
-                end if;
-            end if;
-        end process;
-        validMem <= tempValidMem;
+        flagsRegister: entity work.mRegister
+			generic map (n => 3)
+			port map (
+				input	=> inFlags,
+				enable	=> flagsEnable,
+				clk		=> clk,
+				reset	=> reset,
+				output	=> outFlags
+			);
+
+        flagsEnable <= '1' when validAlu = '1' or setFlags = '1' else  '0';
+        inFlags <= outFlags(2) & currentFlags(1 downto 0) when (validAlu = '1' and  (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))else
+            currentFlags when (validAlu = '1' and (not (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))) else
+            robFlags when setFlags = '1' else "000";
+        flags(2) <= outFlags(2) when (validAlu = '0' or aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE) else currentFlags(2);
+        flags(1 downto 0) <= currentFlags(1 downto 0) when validAlu = '1' else outFlags(1 downto 0);
+        lastExcutedAluDestNameValue <= tempLastExcutedAluDestNameValue when validAlu = '1';
 end rtl;

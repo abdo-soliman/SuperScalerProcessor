@@ -1,0 +1,212 @@
+vsim -gui work.decodingcircuit
+# vsim -gui work.decodingcircuit 
+# Start time: 03:48:40 on May 07,2019
+# Loading std.standard
+# Loading std.textio(body)
+# Loading ieee.std_logic_1164(body)
+# Loading ieee.std_logic_arith(body)
+# Loading ieee.std_logic_unsigned(body)
+# Loading work.constants(body)
+# Loading work.decodingcircuit(rtl)
+add wave -position insertpoint  \
+sim:/decodingcircuit/src2 \
+sim:/decodingcircuit/src1 \
+sim:/decodingcircuit/sigValueSrc2 \
+sim:/decodingcircuit/sigValueSrc1 \
+sim:/decodingcircuit/sigValidSrc2 \
+sim:/decodingcircuit/sigValidSrc1 \
+sim:/decodingcircuit/sigDestTag \
+sim:/decodingcircuit/opcodeType \
+sim:/decodingcircuit/opcode \
+sim:/decodingcircuit/rsMemValid \
+sim:/decodingcircuit/rsMemInstruction \
+sim:/decodingcircuit/rsAluValid \
+sim:/decodingcircuit/rsAluInstruction \
+sim:/decodingcircuit/robValid \
+sim:/decodingcircuit/robInstruction \
+sim:/decodingcircuit/outSrc2 \
+sim:/decodingcircuit/outSrc1 \
+sim:/decodingcircuit/instQueueMode \
+sim:/decodingcircuit/instQueueEnable \
+sim:/decodingcircuit/src2tag \
+sim:/decodingcircuit/src2state \
+sim:/decodingcircuit/src1tag \
+sim:/decodingcircuit/src1state \
+sim:/decodingcircuit/rsDestName \
+sim:/decodingcircuit/robSrc2value \
+sim:/decodingcircuit/robSrc1value \
+sim:/decodingcircuit/robFull \
+sim:/decodingcircuit/regSrc2value \
+sim:/decodingcircuit/regSrc1value \
+sim:/decodingcircuit/memRsFull \
+sim:/decodingcircuit/lastStoreValid \
+sim:/decodingcircuit/lastStore \
+sim:/decodingcircuit/instruction \
+sim:/decodingcircuit/immediateValue \
+sim:/decodingcircuit/clk \
+sim:/decodingcircuit/aluRsFull
+
+
+force -freeze sim:/decodingcircuit/clk 0 0, 1 {50 ps} -r 100
+force -freeze sim:/decodingcircuit/robFull 0 0
+force -freeze sim:/decodingcircuit/aluRsFull 0 0
+force -freeze sim:/decodingcircuit/memRsFull 0 0
+force -freeze sim:/decodingcircuit/immediateValue 1111111111111111 0
+force -freeze sim:/decodingcircuit/lastStore 010 0
+force -freeze sim:/decodingcircuit/lastStoreValid 0 0
+force -freeze sim:/decodingcircuit/rsDestName 111 0
+##case call src2 should be redundant
+force -freeze sim:/decodingcircuit/instruction 1100000100000000 0
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+##expecting 1111000011110000 in destination address
+## got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 1 ##destination adressvalid correct with register pass
+##got  1 11000 0000000000000000 0 1111000011110000 001 000 0 0 0 1 ##sa7 a5yran
+run
+force -freeze sim:/decodingcircuit/instruction 1100000100000000 0
+force -freeze sim:/decodingcircuit/src1state 01 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+run
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 11000 0000000000000000 0 1010000000000000 001 000 0 0 0 0##set avalalibale mazbot
+
+force -freeze sim:/decodingcircuit/instruction 1100000100000000 0
+force -freeze sim:/decodingcircuit/src1state 10 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0 #expecting this value
+run
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 11000 0000000000000000 0 0000111100001111 001 000 0 0 0 1 #got the correct one
+
+##now testing ret and rti
+force -freeze sim:/decodingcircuit/instruction 1100100000000000 0
+run
+##got 1 11001 0000000000000000000000000000000000000000000##mazbot
+##now testing jumps
+force -freeze sim:/decodingcircuit/instruction 1110000000000000 0
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+run
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 11100 0000000000000000 0 1111000011110000 000 000 0 0 0 1#mazbot
+
+force -freeze sim:/decodingcircuit/instruction 1110000000000000 0
+force -freeze sim:/decodingcircuit/src1state 01 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 11100 0000000000000000 0 1010000000000000 000 000 0 0 0 0
+
+force -freeze sim:/decodingcircuit/src1state 10 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0 #expecting this value
+run
+##got 1 11100 0000000000000000 0 0000111100001111 000 000 0 0 0 1
+##testing type two
+#case push R1
+force -freeze sim:/decodingcircuit/instruction 1000000100000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10000 1111000011110000 1 0000000000000000 001 000 0 0 0 0#mazbot
+run
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10000 1010000000000000 0 0000000000000000 001 000 0 0 0 0 ##di mazbota
+##got 1 10000 0000111100001111 1 0000000000000000 001 000 0 0 0 0##mazbota bardo
+
+
+##case pop
+force -freeze sim:/decodingcircuit/instruction 1000100100000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+run
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10001 0000000000000000 0 0000000000000000 001 000 0 0 0 0##sa7
+##tmam pop now LD R1 , R2
+
+force -freeze sim:/decodingcircuit/instruction 1001000101000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10010 0000000000000000 0 0000000000000000 001 000 0 0 0 0
+##got 1 10010 0000000000000000 0 0000000000000000 001 010 0 0 0 0##with waitting tag
+force -freeze sim:/decodingcircuit/lastStore 010 0
+force -freeze sim:/decodingcircuit/lastStoreValid 1 0
+
+##now try Store R1, R2
+##tmam l store
+force -freeze sim:/decodingcircuit/instruction 1001100101000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/src2state 00 0
+force -freeze sim:/decodingcircuit/src2tag 111 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10011 1111000011110000 1 0000000000000001 001 000 0 0 0 1
+##got 1 10011 1010000000000000 0 0000000000000001 001 000 0 0 0 1
+##got 1 10011 1111000011110000 1 1110000000000000 001 000 0 0 0 0
+##got 1 10011 0000111100001111 1 0000000000000010 001 000 0 0 0 1
+
+##now LDM ## we need the values to be zeros
+force -freeze sim:/decodingcircuit/instruction 1011000100000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/src2state 00 0
+force -freeze sim:/decodingcircuit/src2tag 111 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 10110 1111000011110000 1 1111111111111111 001 000 0 0 0 1
+##got 1 10110 0000111100001111 1 1111111111111111 001 000 0 0 0 1
+##got 1 10110 1010000000000000 0 1111111111111111 001 000 0 0 0 1
+##got 1 10110 0000000000000000 0 0000000000000000 001 000 0 0 0 0
+
+##now SHR R1
+force -freeze sim:/decodingcircuit/instruction 0111100100000000 0 
+force -freeze sim:/decodingcircuit/src1state 00 0
+force -freeze sim:/decodingcircuit/src1tag 101 0
+force -freeze sim:/decodingcircuit/src2state 00 0
+force -freeze sim:/decodingcircuit/src2tag 111 0
+force -freeze sim:/decodingcircuit/regSrc1value 1111000011110000 0
+force -freeze sim:/decodingcircuit/robSrc1value 0000111100001111 0
+force -freeze sim:/decodingcircuit/regSrc2value 0000000000000001 0
+force -freeze sim:/decodingcircuit/robSrc2value 0000000000000010 0
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 01111 1111000011110000 1 1111111111111111 001 000 0 0 0 1
+##got 1 01111 1010000000000000 0 1111111111111111 001 000 0 0 0 1
+##got 1 01111 0000000000000000 0 0000000000000000 001 000 0 0 0 0 ##kda sa7
+##got 1 00100 1111000011110000 1 0000000000000000 001 000 0 0 0 0
+##inc R1
+force -freeze sim:/decodingcircuit/instruction 0010000100000000 0 
+##got 1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+##got 1 00100 0000000000000000 0 0000000000000000 001 000 0 0 0 0
+##out R1
+1 11000 0000000000000000 0 0000000000000000 001 000 0 0 0 0##garbage
+1 00111 1111000011110000 1 0000000000000000 001 000 0 0 0 0
+1 00111 0000111100001111 1 0000000000000000 001 000 0 0 0 0
+1 00111 1010000000000000 0 0000000000000000 001 000 0 0 0 0

@@ -67,8 +67,12 @@ architecture rtl of ReservationStation is
 	signal destNameRegOutput:	std_logic_vector(2 downto 0) := (others => '0');
 
 	begin
-		process(clk, outEnable)
+		process(clk, validAlu, validMem, outEnable)
+		variable changedSrc1FromBus: std_logic;
+		variable changedSrc2FromBus: std_logic;
 		begin
+			changedSrc1FromBus := '0';
+			changedSrc2FromBus := '0';
 
 			if reset = '1' then
 				srcRegTagReset1 <= '1';
@@ -79,36 +83,81 @@ architecture rtl of ReservationStation is
 				opCodeRegReset <= '1';
 				destNameRegReset <= '1';
 			else
-				if (busyRegOutput = "1") then
-					-- check if value of source 1 calculated 
-					if (validAlu = '1' and lastExcutedAluDestName = src1Tag and srcRegValidOutput1 = "0") then
+				srcRegTagReset1 <= '0';
+				srcRegTagReset2 <= '0';
+				srcRegValidReset1 <= '0';
+				srcRegValidReset2 <= '0';
+				busyRegReset <= '0';
+				opCodeRegReset <= '0';
+				destNameRegReset <= '0';
+
+				if (inEnables(0) = '1') then
+					if (validAlu = '1' and src1Valid = "0" and lastExcutedAluDestName = src1Tag(2 downto 0)) then
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
 						srcRegTagEnable1 <= '1';
 						srcRegTagInput1 <= lastExcutedAluDestNameValue;
-					-- check if value of source 2 calculated
-					elsif (validAlu = '1' and lastExcutedAluDestName = src2Tag  and srcRegValidOutput2 = "0") then
+						changedSrc1FromBus := '1';
+					end if;
+					if (validAlu = '1' and src2Valid = "0" and lastExcutedAluDestName = src2Tag(2 downto 0)) then
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';
 						srcRegTagEnable2 <= '1';
 						srcRegTagInput2 <= lastExcutedAluDestNameValue;
-					-- create new one with its values
-					elsif (validMem = '1' and lastExcutedMemDestName = src1Tag and srcRegValidOutput1 = "0") then
+						changedSrc2FromBus := '1';
+					end if;
+					if (validMem = '1' and src1Valid = "0" and lastExcutedMemDestName = src1Tag(2 downto 0)) then
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
 						srcRegTagEnable1 <= '1';
 						srcRegTagInput1 <= lastExcutedMemDestNameValue;
-						-- check if value of source 2 calculated
-					elsif (validMem = '1' and lastExcutedMemDestName = src2Tag  and srcRegValidOutput2 = "0") then
+						changedSrc1FromBus := '1';
+					end if;
+					if (validMem = '1' and src2Valid = "0" and lastExcutedMemDestName = src2Tag(2 downto 0)) then
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';
 						srcRegTagEnable2 <= '1';
 						srcRegTagInput2 <= lastExcutedMemDestNameValue;
-					-- create new one with its values
+						changedSrc2FromBus := '1';
+					end if;
+				end if;
+				
+				if (busyRegOutput = "1") then
+					if (validAlu = '1' and srcRegValidOutput1 = "0" and lastExcutedAluDestName = srcRegTagOutput1(2 downto 0)) then
+						srcRegValidInput1 <= "1";
+						srcRegValidEnable1 <= '1';
+						srcRegValidReset1 <= '0';
+						srcRegTagEnable1 <= '1';
+						srcRegTagInput1 <= lastExcutedAluDestNameValue;
+						changedSrc1FromBus := '1';
+					end if;
+					if (validAlu = '1'  and srcRegValidOutput2 = "0" and lastExcutedAluDestName = srcRegTagOutput2(2 downto 0)) then
+						srcRegValidInput2 <= "1";
+						srcRegValidEnable2 <= '1';
+						srcRegValidReset2 <= '0';
+						srcRegTagEnable2 <= '1';
+						srcRegTagInput2 <= lastExcutedAluDestNameValue;
+						changedSrc2FromBus := '1';
+					end if;
+					if (validMem = '1' and srcRegValidOutput1 = "0" and lastExcutedMemDestName = srcRegTagOutput1(2 downto 0)) then
+						srcRegValidInput1 <= "1";
+						srcRegValidEnable1 <= '1';
+						srcRegValidReset1 <= '0';
+						srcRegTagEnable1 <= '1';
+						srcRegTagInput1 <= lastExcutedMemDestNameValue;
+						changedSrc1FromBus := '1';
+					end if;
+					if (validMem = '1'  and srcRegValidOutput2 = "0" and lastExcutedMemDestName = srcRegTagOutput2(2 downto 0)) then
+						srcRegValidInput2 <= "1";
+						srcRegValidEnable2 <= '1';
+						srcRegValidReset2 <= '0';
+						srcRegTagEnable2 <= '1';
+						srcRegTagInput2 <= lastExcutedMemDestNameValue;
+						changedSrc2FromBus := '1';
 					end if;
 				end if;
 
@@ -117,38 +166,43 @@ architecture rtl of ReservationStation is
 					destNameRegReset <= '0';
 					destNameRegInput <= destName;
 				end if;
+
 				if (inEnables(5) = '1') then
 					opCodeRegEnable <= '1';
 					opCodeRegReset <= '0';
 					opCodeRegInput <= inOpCode;
 				end if;
-				if (inEnables(4) = '1') then
-					srcRegTagEnable1 <= '1';
-					srcRegTagReset1 <= '0';
-					srcRegTagInput1 <= src1Tag;
-				end if;
-				if (inEnables(3) = '1') then
-					srcRegTagEnable2 <= '1';
-					srcRegTagReset2 <= '0';
-					srcRegTagInput2 <= src2Tag;
-				end if;
-				if (inEnables(2) = '1') then
-					srcRegValidEnable1 <= '1';
-					srcRegValidReset1 <= '0';
-					srcRegValidInput1 <= src1Valid;
-				end if;
-				if (inEnables(1) ='1') then
-					srcRegValidEnable2 <= '1';
-					srcRegValidReset2 <= '0';
-					srcRegValidInput2 <= src2Valid;
+
+				if (changedSrc1FromBus = '0') then
+					if (inEnables(4) = '1') then
+						srcRegTagEnable1 <= '1';
+						srcRegTagReset1 <= '0';
+						srcRegTagInput1 <= src1Tag;
+					end if;
+					if (inEnables(2) = '1') then
+						srcRegValidEnable1 <= '1';
+						srcRegValidReset1 <= '0';
+						srcRegValidInput1 <= src1Valid;
+					end if;
 				end if;
 
-				busyRegEnable <= '1';
-				busyRegReset <= '0';
+				if (changedSrc2FromBus = '0') then
+					if (inEnables(3) = '1') then
+						srcRegTagEnable2 <= '1';
+						srcRegTagReset2 <= '0';
+						srcRegTagInput2 <= src2Tag;
+					end if;
+					if (inEnables(1) ='1') then
+						srcRegValidEnable2 <= '1';
+						srcRegValidReset2 <= '0';
+						srcRegValidInput2 <= src2Valid;
+					end if;
+				end if;
+
 				if (inEnables(0) = '1') then
+					busyRegReset <= '0';
+					busyRegEnable <= '1';
 					busyRegInput <= "1";
-				elsif (inEnables(0) = '0') then
-					busyRegInput <= "0";
 				end if;
 
 				ready <= srcRegValidOutput1(0) and srcRegValidOutput2(0);
@@ -157,15 +211,18 @@ architecture rtl of ReservationStation is
 					srcRegValidInput1 <= "0";
 					srcRegValidEnable2 <= '1';
 					srcRegValidInput2 <= "0";
-					-- stopReady := '1';
 
-					src1Value <= srcRegTagOutput1;
-					src2Value <= srcRegTagOutput2;
+					busyRegReset <= '0';
+					busyRegEnable <= '1';
+					busyRegInput <= "0";
+
+					src1value <= srcRegTagOutput1;
+					src2value <= srcRegTagOutput2;
 					outOpCode <= opCodeRegOutput;
 					outDestName <= destNameRegOutput;
 				elsif (outEnable'event and outEnable = '0') then
-					src1Value <= (others => 'Z');
-					src2Value <= (others => 'Z');
+					src1value <= (others => 'Z');
+					src2value <= (others => 'Z');
 					outOpCode <= (others => 'Z');
 					outDestName <= (others => 'Z');
 				end if;
@@ -174,9 +231,10 @@ architecture rtl of ReservationStation is
 					ready <= '0';
 				end if;
 			end if;
-		end process;
 
-		-- invClk <= not clk;
+			changedSrc1FromBus := '0';
+			changedSrc2FromBus := '0';
+		end process;
 			
 		srcRegTag1: entity work.mRegister
 			generic map (n => n)

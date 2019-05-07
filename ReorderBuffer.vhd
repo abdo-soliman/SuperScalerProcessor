@@ -515,34 +515,41 @@ architecture rtl of ReorderBuffer is
 
     end commitInstruction;
     ----------------------------------------------------------------------------
-   procedure decode(        robFull:            in std_logic;
-                            aluRsFull:          in std_logic;
-                            memRsFull:          in std_logic;
-                            instruction:        in std_logic_vector(15 downto 0);
-                            immediateValue:     in std_logic_vector(15 downto 0);
-                            lastStore:          in std_logic_vector(2 downto 0);
-                            lastStoreValid:     in std_logic;
-                            src1state:          in std_logic_vector(1 downto 0);
-                            src1tag:            in std_logic_vector(2 downto 0);
-                            rsDestName:         in std_logic_vector(2 downto 0);
-                            regSrc1value:       in std_logic_vector(15 downto 0);
-                            robSrc1value:       in std_logic_vector(15 downto 0);
-                            src2state:          in std_logic_vector(1 downto 0);
-                            src2tag:            in std_logic_vector(2 downto 0);
-                            regSrc2value:       in std_logic_vector(15 downto 0);
-                            robSrc2value:       in std_logic_vector(15 downto 0);
-                            rsAluValid:         out std_logic;
-                            rsAluInstruction:   out std_logic_vector(41 downto 0);
-                            rsMemValid:         out std_logic;
-                            rsMemInstruction:   out std_logic_vector(28 downto 0);
-                            robValid:           out std_logic;
-                            robInstruction:     out std_logic_vector(48 downto 0);
-                            outSrc1:            out std_logic_vector(2 downto 0);
-                            outSrc2:            out std_logic_vector(2 downto 0);
-                            instQueueEnable:    out std_logic;
-                            instQueueMode:      out std_logic          )is
-                    
-    --for looping
+   procedure decode(variable        robFull:            in std_logic;
+                    variable        aluRsFull:          in std_logic;
+                    variable        memRsFull:          in std_logic;
+                    variable        instruction:        in std_logic_vector(15 downto 0);
+                    variable        immediateValue:     in std_logic_vector(15 downto 0);
+                    variable        lastStore:          in std_logic_vector(2 downto 0);
+                    variable        lastStoreValid:     in std_logic;
+                    variable        src1state:          in std_logic_vector(1 downto 0);
+                    variable        src1tag:            in std_logic_vector(2 downto 0);
+                    variable        rsDestName:         in std_logic_vector(2 downto 0);
+                    variable        regSrc1value:       in std_logic_vector(15 downto 0);
+                    variable        robSrc1value:       in std_logic_vector(15 downto 0);
+                    variable        src2state:          in std_logic_vector(1 downto 0);
+                    variable        src2tag:            in std_logic_vector(2 downto 0);
+                    variable        regSrc2value:       in std_logic_vector(15 downto 0);
+                    variable        robSrc2value:       in std_logic_vector(15 downto 0);
+                    variable        rsAluValid:         out std_logic;
+                    variable       rsAluInstruction:   out std_logic_vector(41 downto 0);
+                    variable        rsMemValid:         out std_logic;
+                    variable       rsMemInstruction:   out std_logic_vector(28 downto 0);
+                    variable       robValid:           out std_logic;
+                    variable        robInstruction:     out std_logic_vector(48 downto 0);
+                    variable        outSrc1:            out std_logic_vector(2 downto 0);
+                    variable        outSrc2:            out std_logic_vector(2 downto 0);
+                    variable        instQueueEnable:    out std_logic;
+                    variable        instQueueMode:      out std_logic;          
+                    variable       ROBissue:           out std_logic;
+                    variable       ALUissue:           out std_logic;
+                    variable       Memissue:           out std_logic;
+                    signal         r:                  in rType;
+                    signal         state:              inout REGISTER_STATE;
+                    signal         waitingROB:         inout WAITING_ROB;
+                    signal         writePointer:       in std_logic_vector(2 downto 0);
+                    signal         currentPc:          in std_logic_vector(16 downto 0))is
+
     variable opcode:          std_logic_vector(4 downto 0) := (others => '0');
     variable opcodeType:      std_logic_vector(1 downto 0) := (others => '0');
     variable src1:            std_logic_vector(2 downto 0) := (others => '0');
@@ -576,7 +583,23 @@ architecture rtl of ReorderBuffer is
         robInstruction(48) := '1';
         robInstruction(3 downto 1) := "000";
         destTag := src1;
+
+        if(isAlueRSinstruction(instruction(15 downto 11) ) )then
+            if(aluRsFull = '1' or robFull = '1')then
+                ROBissue := '0';
+                ALUissue := '0';
+            end if;
+        elsif (isLoad(instruction(15 downto 11) )) then
+            if(memRsFull = '1' or robFull = '1')then
+                ROBissue := '0';
+                Memissue := '0';
+            end if;
+        end if;
         
+
+        if(instruction(15 downto 11) = SHR_OPCODE or instruction(15 downto 11) = SHL_OPCODE or instruction(15 downto 11) = LDM_OPCODE)then
+            instQueueMode := '1';
+        end if;
         if (src1state = "00") then
             valueSrc1 := regSrc1value;
             validSrc1 := '1';
@@ -627,7 +650,7 @@ architecture rtl of ReorderBuffer is
             setZeroSrc := '1';
             if (opcode = SHR_OPCODE or opcode = SHL_OPCODE) then
                 -- stall <= '1';
-                instQueueMode := '1';
+                --instQueueMode := '1';
                 valueSrc2 := immediateValue;
                 validSrc2 := '1';
             else
@@ -657,7 +680,7 @@ architecture rtl of ReorderBuffer is
             if (opcode = LDM_OPCODE) then
                 robValid := '1';    -- only LDM Stalls
                 setZeroSrc := '1';
-                instQueueMode := '1';
+                --instQueueMode := '1';
                 valueSrc2 := immediateValue;
                 validSrc2 := '1';
             end if;
@@ -728,14 +751,18 @@ architecture rtl of ReorderBuffer is
         rsMemInstruction(20) := validSrc1;
         rsMemInstruction(23 downto 21) := valueSrc1(2 downto 0);
         rsMemInstruction(28 downto 24) := opcode;
-
-        --sigValueSrc1 <= valueSrc1;
-        --sigValidSrc1 <= validSrc1;
-        --sigValueSrc2 <= valueSrc2;
-        --sigValidSrc2 <= validSrc2;
-        --sigDestTag   <= destTag;
         
     
+        if(writesBack(instruction(15 downto 11)))then
+            waitingROB(to_integer(unsigned(destTag))) <= writePointer;
+            if(instruction(15 downto 11) = IN_OPCODE)then
+                state(to_integer(unsigned(destTag))) <= FLIGHT;
+            else 
+               state(to_integer(unsigned(destTag))) <= INEXECUTE;  
+            end if;
+        end if;
+
+
     end decode;
     ----------------------------------------------------------------------------
     procedure resolveLoad(  signal myTag:           in          std_logic_vector(2 downto 0);      

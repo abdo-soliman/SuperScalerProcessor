@@ -111,6 +111,10 @@ function isLoopFamily(opCode:   std_logic_vector(4 downto 0)) return boolean;
 --------------------------------------------------------------------------------
 function toString ( a: std_logic_vector) return string;
 --------------------------------------------------------------------------------
+function isAlueRSinstruction(opCode:   std_logic_vector(4 downto 0)) return boolean;
+--------------------------------------------------------------------------------
+function writesBack(opCode:   std_logic_vector(4 downto 0)) return boolean;
+--------------------------------------------------------------------------------
 end package constants;
 -----------------------------Helper Functions-------------------------------
 package body constants is 
@@ -360,6 +364,30 @@ begin
         return false;
     end if;
 end isLoopFamily;
+----------------------------------------------------------------------------
+function isAlueRSinstruction(opCode:   std_logic_vector(4 downto 0))
+                            return boolean is
+begin
+    if( isTypeOne(opCode) or( isTypeZero(opCode) and (opCode /= NOP_OPCODE )and (opCode /= IN_OPCODE) and (opCode /= OUT_OPCODE))) then
+        return true;
+    else
+        return false;
+    end if;
+end isAlueRSinstruction;
+--------------------------------------------------------------------------------
+function writesBack(opCode:   std_logic_vector(4 downto 0))
+                            return boolean is
+begin
+    if(opCode = NOT_OPCODE or opCode = SETC_OPCODE
+     or opCode = INC_OPCODE or opCode = DEC_OPCODE
+     or opCode = IN_OPCODE or isTypeOne(opCode)
+     or opCode = POP_OPCODE or opCode = LDD_OPCODE
+     or opCode = LDM_OPCODE) then
+        return true;
+    else
+        return false;
+    end if;
+end writesBack;
 --------------------------------------------------------------------------------
 function toString ( a: std_logic_vector) return string is
 variable b : string (1 to a'length) := (others => NUL);

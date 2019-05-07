@@ -882,7 +882,7 @@ begin
     ROBEmptySignal <= '1' when (readPointer = writePointer and ROBFullSignal = '0')
                     else '0';
 
-    portReadEnableOut <= '1' when instruction(31 downto 28) = IN_OPCODE
+    portReadEnableOut <= '1' when instruction(31 downto 27) = IN_OPCODE
                     else '0';
 
     outputValueOut <= outputValueSignal;
@@ -983,10 +983,11 @@ begin
             memoryWriteEnableSignal <= memoryWriteEnableV;
             portWriteEnableSignal <= portWriteEnableV;
             pcWriteEnableSignal <= pcWriteEnableV;
-            portReadEnableOut <= portReadEnableV;
+            --portReadEnableOut <= portReadEnableV;
             isPushSignal <= isPushV;
             isPopSignal <= isPopV;
             flagsOut <= flagsOutV;
+            destRegisterGotValueV := false;
 
             if(ROBEmptySignal /= '1')then
                 report "Plz";
@@ -1014,7 +1015,7 @@ begin
                 memoryWriteEnableSignal <= memoryWriteEnableV;
                 portWriteEnableSignal <= portWriteEnableV;
                 pcWriteEnableSignal <= pcWriteEnableV;
-                portReadEnableOut <= portReadEnableV;
+                --portReadEnableOut <= portReadEnableV;
                 isPushSignal <= isPushV;
                 isPopSignal <= isPopV;
                 flagsOut <= flagsOutV;

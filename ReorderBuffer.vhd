@@ -767,6 +767,18 @@ architecture rtl of ReorderBuffer is
             elsif (opcode = CALL_OPCODE) then
                 valueSrc1 := currentPc - numberOfElements - 1;
                 validSrc1 := '1';
+
+                if (src1state = AVAILABLE) then
+                    valueSrc2 := regSrc1value;
+                    validSrc2 := '1';
+                elsif (src1state = INEXECUTE) then
+                    valueSrc2(15 downto 13) := src1tag;
+                    valueSrc2(12 downto 0) := (others => '0');
+                    validSrc2 := '0';
+                elsif (src1state = FLIGHT) then
+                    valueSrc2 := robSrc1value;
+                    validSrc2 := '1';
+                end if;
             else
                 if (src1state = AVAILABLE) then
                     valueSrc2 := regSrc1value;

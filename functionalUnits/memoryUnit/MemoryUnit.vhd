@@ -46,10 +46,7 @@ architecture rtl of MemoryUnit is
                     end if;
                 elsif (mode = "11") then    -- pop
                     if (clk = '0') then
-<<<<<<< HEAD
-=======
                         report "Hahaha";
->>>>>>> ca02f754c71d639cf9b517b0f6246e6db7e737ae
                         readWriteEnable <= '0';
                         -- currentAddress <= sp + 1;
                         sp <= sp + 1;

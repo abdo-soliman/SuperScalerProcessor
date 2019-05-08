@@ -98,7 +98,7 @@ with open(inputFileName) as f:
                 outFile.write("\n")
             else:     # 2 operand 
                 register2 = line.split(',')[1]
-                if instruction == 'SUB' or instruction == 'STD' or instruction == "LDD":
+                if instruction == 'SUB' or instruction == 'STD' or instruction == 'LDD':
                     line = opcode[instruction] + registers[register1] + registers[register2]
                 else:
                     line = opcode[instruction] + registers[register2] + registers[register1]

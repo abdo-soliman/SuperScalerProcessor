@@ -30,10 +30,10 @@ entity ReorderBuffer is
         --ROBEmpty:		out 		std_logic := '0';
         pcWriteOut:        out         std_logic := '0';
         pcValueOut:        out         std_logic_vector(15 downto 0) := (others => '0');
-        destRegisterOut:    out     std_logic_vector(2 downto 0);
+        destRegisterOut:    out     std_logic_vector(2 downto 0) := (others => '0');
         registerWriteEnableOut:    out         std_logic := '0';
-        outputValueOut:            out     std_logic_vector(15 downto 0);
-        addressOut:                out     std_logic_vector(15 downto 0);
+        outputValueOut:            out     std_logic_vector(15 downto 0) := (others => '0');
+        addressOut:                out     std_logic_vector(15 downto 0) := (others => '0');
         memoryWriteEnableOut:   out        std_logic := '0';
         portWriteEnableOut:     out        std_logic := '0';
         portReadEnableOut:      out        std_logic := '0';
@@ -390,6 +390,9 @@ architecture rtl of ReorderBuffer is
     variable entryOpCode: std_logic_vector(4 downto 0);
 
     begin
+        report "Trying to commit";
+        report toString(entry);
+        report toString(DestinationRegister(entry));
         entryOpCode := getOpCode(entry);
 
         registerWriteEnable := '0';
@@ -413,6 +416,7 @@ architecture rtl of ReorderBuffer is
                     registerWriteEnable := '1';
                     commitPop := '1';
                 else
+                    report "Why my nigga";
                     isPop := '1';
                     entry(1) := '1';
                 end if;
@@ -515,6 +519,7 @@ architecture rtl of ReorderBuffer is
             registerWriteEnable := '1';
             portReadEnable := '1';
             destRegister := DestinationRegister(entry);
+            outputValue := Value(entry);
 
         elsif (entryOpCode = OUT_OPCODE) then
             if(ValueValid(entry) = '1') then 
@@ -730,6 +735,8 @@ architecture rtl of ReorderBuffer is
                 setZeroSrc := '1';
                 --instQueueMode := '1';
                 valueSrc2 := immediateValue;
+                report "7a";
+                report toString(immediateValue);
                 validSrc2 := '1';
             end if;
 
@@ -827,8 +834,12 @@ architecture rtl of ReorderBuffer is
         if(writesBack(instruction(15 downto 11)))then
             waitingROB(to_integer(unsigned(destRegister))) <= rsDestName;
             if(instruction(15 downto 11) = IN_OPCODE)then
+                report "Why my bro";
+                report toString(destRegister);
                 state(to_integer(unsigned(destRegister))) <= FLIGHT;
             else 
+                report "Tell me why";
+                report toString(destRegister); 
                state(to_integer(unsigned(destRegister))) <= INEXECUTE;  
             end if;
         end if;
@@ -985,7 +996,6 @@ begin
             commitPopV := '0';
             flagsOutV := (others => '0');
             
-            tagToMemory <= readPointer;
             registerWriteEnableSignal <= registerWriteEnableV;
             memoryWriteEnableSignal <= memoryWriteEnableV;
             portWriteEnableSignal <= portWriteEnableV;
@@ -998,6 +1008,7 @@ begin
 
             if(ROBEmptySignal /= '1')then
                 report "Plz";
+                report toString(inp);
                 commitInstruction(
                     inp,
                     destinationRegisterV,
@@ -1027,6 +1038,8 @@ begin
                 isPopSignal <= isPopV;
                 flagsOut <= flagsOutV;
 
+                report toString(inp);
+
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
                     ROBFullSignal <= '0';
@@ -1034,10 +1047,15 @@ begin
                     q(to_integer(unsigned(readPointer))) <= inp;    
                 end if;
                 
+                if (isPopV = '1' or isStoreV = '1') then
+                    report "WHY WHY WHY";
+                    tagToMemory <= readPointer;
+                end if;
+
                 if (commitedV and registerWriteEnableV = '1') then 
                     --TODO add RF Adapter
                     if (commitPopV = '1')then
-                        tempRegisters(to_integer(unsigned(destRegisterV))) <= mememoryValue;
+                        tempRegisters(to_integer(unsigned(destinationRegisterV))) <= mememoryValue;
                         outputValueSignal <= mememoryValue;
 
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = INEXECUTE
@@ -1048,7 +1066,7 @@ begin
                         end if;
 
                     elsif(isPopV = '0')then
-                        tempRegisters(to_integer(unsigned(destRegisterV))) <= outputValueV;
+                        tempRegisters(to_integer(unsigned(destinationRegisterV))) <= outputValueV;
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = FLIGHT
                             and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
 
@@ -1142,6 +1160,7 @@ begin
         elsif(instQueueWritten'event and instQueueWritten = '1') then
             temp1 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24))))))));
             temp2 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21))))))));
+            report toString(writePointer);
             decode(
                 robFull => ROBFullSignal,
                 aluRsFull => aluRsFull,

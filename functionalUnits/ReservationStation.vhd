@@ -93,6 +93,7 @@ architecture rtl of ReservationStation is
 
 				if (inEnables(0) = '1') then
 					if (validAlu = '1' and src1Valid = "0" and lastExcutedAluDestName = src1Tag(2 downto 0)) then
+						report "enables(0) and src1";
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
@@ -101,6 +102,7 @@ architecture rtl of ReservationStation is
 						changedSrc1FromBus := '1';
 					end if;
 					if (validAlu = '1' and src2Valid = "0" and lastExcutedAluDestName = src2Tag(2 downto 0)) then
+						report "enables(0) and src2";
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';
@@ -128,6 +130,7 @@ architecture rtl of ReservationStation is
 				
 				if (busyRegOutput = "1") then
 					if (validAlu = '1' and srcRegValidOutput1 = "0" and lastExcutedAluDestName = srcRegTagOutput1(2 downto 0)) then
+						report "busyRegOutput and src1";
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
@@ -136,6 +139,7 @@ architecture rtl of ReservationStation is
 						changedSrc1FromBus := '1';
 					end if;
 					if (validAlu = '1'  and srcRegValidOutput2 = "0" and lastExcutedAluDestName = srcRegTagOutput2(2 downto 0)) then
+						report "busyRegOutput and src2";
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';

@@ -44,13 +44,13 @@ registers['R2'] = '010'
 registers['R3'] = '011'
 registers['R4'] = '100'
 registers['R5'] = '101'
-registers['R6'] = '011'
+registers['R6'] = '110'
 registers['R7'] = '111'
 
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("BRANCHoutput.txt","w+")
+outFile = open("MEM.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -88,7 +88,7 @@ with open(inputFileName) as f:
         if (len(line) > 2):   # 2 operand  and immediate value
             register1 = line.split(',')[0]
             if (instruction == 'LDM') or (instruction == 'SHR') or (instruction == 'SHL'):
-                number = int(line.split(',')[1])
+                number = int(line.split(',')[1],16)
                 line2 = opcode[instruction] + registers[register1]
                 line2 = line2 [::-1]
                 line2 = line2.zfill(16)

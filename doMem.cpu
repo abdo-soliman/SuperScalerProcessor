@@ -5,41 +5,32 @@ add wave -position end  sim:/cpu/inputPort
 add wave -position end  sim:/cpu/outputPort
 add wave -position end  sim:/cpu/interrupt
 add wave -position end  sim:/cpu/inputPortReady
-add wave -position end  sim:/cpu/rob/readPointer
 force -freeze sim:/cpu/reset 1 0
 force -freeze sim:/cpu/clk 0 0, 1 {50 ps} -r 100
 mem load -i /home/ahmed/Downloads/SuperScalerProcessor/MEM.txt -format binary /cpu/insRam/ram
-add wave -position end  sim:/cpu/ROBisPop
-add wave -position end  sim:/cpu/dataMEMout
-add wave -position end  sim:/cpu/dataMEMtag
-add wave -position end  sim:/cpu/dataMEMtagValid
 force -freeze sim:/cpu/reset 1 0
 force -freeze sim:/cpu/clk 0 0, 1 {50 ps} -r 100
-add wave -position end  sim:/cpu/dataRam/memoryUnit/sp
 run
-add wave -position end  sim:/cpu/dataRam/memoryUnit/currentAddress
-# ** Warning: There is an 'U'|'X'|'W'|'Z'|'-' in an arithmetic operand, the result will be 'X'(es).
-#    Time: 0 ps  Iteration: 0  Instance: /cpu/arithUnit
-# ** Warning: There is an 'U'|'X'|'W'|'Z'|'-' in an arithmetic operand, the result will be 'X'(es).
-#    Time: 0 ps  Iteration: 0  Instance: /cpu/arithUnit
-# ** Warning: There is an 'U'|'X'|'W'|'Z'|'-' in an arithmetic operand, the result will be 'X'(es).
-#    Time: 0 ps  Iteration: 0  Instance: /cpu/arithUnit
-# ** Warning: NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-#    Time: 0 ps  Iteration: 0  Instance: /cpu/arithUnit/alu/su_inst
-# ** Warning: NUMERIC_STD.TO_INTEGER: metavalue detected, returning 0
-#    Time: 0 ps  Iteration: 2  Instance: /cpu/dataRam/memoryUnit/ram
 force -freeze sim:/cpu/reset 0 0
 force -freeze sim:/cpu/inputPort 0019 0
 run
-# ** Note: 000
-#    Time: 200 ps  Iteration: 2  Instance: /cpu/rob
-force -freeze sim:/cpu/inputPort FFFF 0
 run
-# ** Note: 1001100000000000011001100000000000000000100000001
-#    Time: 250 ps  Iteration: 0  Instance: /cpu/rob
-# ** Note: Plz
-#    Time: 300 ps  Iteration: 0  Instance: /cpu/rob
-# ** Note: 001
-#    Time: 300 ps  Iteration: 2  Instance: /cpu/rob
 force -freeze sim:/cpu/inputPort F320 0
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
 run

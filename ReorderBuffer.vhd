@@ -357,6 +357,8 @@ architecture rtl of ReorderBuffer is
                     entry(1) := '1';
                 elsif (entryOpCode = JN_OPCODE and isNegativeSet(flags)) then
                     entry(1) := '1';
+                elsif (entryOpCode = JMP_OPCODE) then
+                    entry(1) := '1';
                 end if;
 
             end if;
@@ -625,6 +627,7 @@ architecture rtl of ReorderBuffer is
             instQueueEnable <= '0';
             return;
         end if;
+
         if(isAlueRSinstruction(instruction(15 downto 11) ) )then
             if(aluRsFull = '1' or robFull = '1')then
                 robValid <= '0';
@@ -761,16 +764,20 @@ architecture rtl of ReorderBuffer is
                 valueSrc1 := currentPc - numberOfElements - 1;
                 validSrc1 := '1';
             else
+                report "I'm here";
                 if (src1state = AVAILABLE) then
                     valueSrc2 := regSrc1value;
                     validSrc2 := '1';
+                    report "First";
                 elsif (src1state = INEXECUTE) then
                     valueSrc2(15 downto 13) := src1tag;
                     valueSrc2(12 downto 0) := (others => '0');
                     validSrc2 := '0';
+                    report "Second";
                 elsif (src1state = FLIGHT) then
                     valueSrc2 := robSrc1value;
                     validSrc2 := '1';
+                    report "Third";
                 end if;
 
                 -- robInstruction(42 downto 26) <= (others => '0');
@@ -1038,6 +1045,7 @@ begin
                 
                 if (isPopV = '1' or isStoreV = '1') then
                     tagToMemory <= readPointer;
+                    report "Massa2 elgamal";
                 end if;
 
                 if (commitedV and registerWriteEnableV = '1') then 
@@ -1068,7 +1076,7 @@ begin
 
                 end if;
 
-                if (isPopV = '0' and pcWriteEnableV = '1') then --RET 
+                if (isPopV = '1' and pcWriteEnableV = '1') then --RET 
                     isRet <= '1';
                 end if;
 
@@ -1091,6 +1099,7 @@ begin
                     lastStoreValidSignal <= '0';
                     registerState <= (others => AVAILABLE);
                     ROBFullSignal <= '0';
+                    ROBissue <= '0';
                     --ReadPointerRotated <= '0';
                     --writePointerRotated <= '0';
                     --pcValueSignal <= outputValueSignal;
@@ -1147,7 +1156,7 @@ begin
 
         --------------------------------------------------------------------
         --Decoding
-        elsif(instQueueWritten'event and instQueueWritten = '1') then
+        elsif(pcWriteEnableSignal = '0' and instQueueWritten'event and instQueueWritten = '1') then
             temp1 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24))))))));
             temp2 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21))))))));
             decode(

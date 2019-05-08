@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("MEM.txt","w+")
+outFile = open("jumps.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -80,7 +80,6 @@ with open(inputFileName) as f:
              mynum += 1
              continue
         
-
         instruction = line[0]
         print(instruction)
         if len(line) > 1 :

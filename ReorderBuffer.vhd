@@ -731,6 +731,8 @@ architecture rtl of ReorderBuffer is
                 setZeroSrc := '1';
                 --instQueueMode := '1';
                 valueSrc2 := immediateValue;
+                report "7a";
+                report toString(immediateValue);
                 validSrc2 := '1';
             end if;
 
@@ -828,8 +830,12 @@ architecture rtl of ReorderBuffer is
         if(writesBack(instruction(15 downto 11)))then
             waitingROB(to_integer(unsigned(destRegister))) <= rsDestName;
             if(instruction(15 downto 11) = IN_OPCODE)then
+                report "Why my bro";
+                report toString(destRegister);
                 state(to_integer(unsigned(destRegister))) <= FLIGHT;
             else 
+                report "Tell me why";
+                report toString(destRegister); 
                state(to_integer(unsigned(destRegister))) <= INEXECUTE;  
             end if;
         end if;

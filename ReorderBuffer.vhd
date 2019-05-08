@@ -390,6 +390,9 @@ architecture rtl of ReorderBuffer is
     variable entryOpCode: std_logic_vector(4 downto 0);
 
     begin
+        report "Trying to commit";
+        report toString(entry);
+        report toString(DestinationRegister(entry));
         entryOpCode := getOpCode(entry);
 
         registerWriteEnable := '0';
@@ -413,6 +416,7 @@ architecture rtl of ReorderBuffer is
                     registerWriteEnable := '1';
                     commitPop := '1';
                 else
+                    report "Why my nigga";
                     isPop := '1';
                     entry(1) := '1';
                 end if;
@@ -992,7 +996,6 @@ begin
             commitPopV := '0';
             flagsOutV := (others => '0');
             
-            tagToMemory <= readPointer;
             registerWriteEnableSignal <= registerWriteEnableV;
             memoryWriteEnableSignal <= memoryWriteEnableV;
             portWriteEnableSignal <= portWriteEnableV;
@@ -1005,6 +1008,7 @@ begin
 
             if(ROBEmptySignal /= '1')then
                 report "Plz";
+                report toString(inp);
                 commitInstruction(
                     inp,
                     destinationRegisterV,
@@ -1034,6 +1038,8 @@ begin
                 isPopSignal <= isPopV;
                 flagsOut <= flagsOutV;
 
+                report toString(inp);
+
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
                     ROBFullSignal <= '0';
@@ -1041,6 +1047,11 @@ begin
                     q(to_integer(unsigned(readPointer))) <= inp;    
                 end if;
                 
+                if (isPopV = '1' or isStoreV = '1') then
+                    report "WHY WHY WHY";
+                    tagToMemory <= readPointer;
+                end if;
+
                 if (commitedV and registerWriteEnableV = '1') then 
                     --TODO add RF Adapter
                     if (commitPopV = '1')then

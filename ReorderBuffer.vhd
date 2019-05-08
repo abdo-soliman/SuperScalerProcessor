@@ -805,11 +805,11 @@ architecture rtl of ReorderBuffer is
             validSrc1 := '0';
         end if;
 
-        if (src2state = INEXECUTE) then
-            valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
-            valueSrc2(15 downto 3) := (others => '0');
-            validSrc2 := '0';
-        end if;
+        -- if (src2state = INEXECUTE) then
+        --     valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
+        --     valueSrc2(15 downto 3) := (others => '0');
+        --     validSrc2 := '0';
+        -- end if;
 
         if (lastStoreValid = '1' and opcode = LDD_OPCODE) then
             valueSrc1(2 downto 0) := waitingTag;

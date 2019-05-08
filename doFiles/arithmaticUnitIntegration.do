@@ -26,32 +26,16 @@ force -freeze sim:/arithmaticunitintegration/issue 2#0 0
 force -freeze sim:/arithmaticunitintegration/setFlags 2#0 0
 force -freeze sim:/arithmaticunitintegration/robFlags 2#000 0
 force -freeze sim:/arithmaticunitintegration/validMem 2#0 0
-force -freeze sim:/arithmaticunitintegration/instruction 16#19E1E101018 0
+force -freeze sim:/arithmaticunitintegration/instruction 16#11FFFF00008 0
 force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestName 2#000 0
 force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestNameValue 16#0000 0
 run
 force -freeze sim:/arithmaticunitintegration/reset 2#0 0
 force -freeze sim:/arithmaticunitintegration/issue 2#1 0
 run
-force -freeze sim:/arithmaticunitintegration/issue 2#0 0
+force -freeze sim:/arithmaticunitintegration/instruction 16#19E64B00019 0
 run
-force -freeze sim:/arithmaticunitintegration/issue 2#1 0
-force -freeze sim:/arithmaticunitintegration/instruction 16#1A000200002 0
-run
-force -freeze sim:/arithmaticunitintegration/instruction 16#2C00011032B 0
+force -freeze sim:/arithmaticunitintegration/instruction 16#1A000000012 0
 run
 force -freeze sim:/arithmaticunitintegration/issue 2#0 0
-run
-run
-run
-force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestName 2#001 0
-force -freeze sim:/arithmaticunitintegration/lastExcutedMemDestNameValue 16#FFFF 0
-force -freeze sim:/arithmaticunitintegration/validMem 2#1 0
-run
-force -freeze sim:/arithmaticunitintegration/validMem 2#0 0
-force -freeze sim:/arithmaticunitintegration/issue 2#1 0
-force -freeze sim:/arithmaticunitintegration/instruction 16#1402031010C 0
-run
-force -freeze sim:/arithmaticunitintegration/issue 2#0 0
-run
 run

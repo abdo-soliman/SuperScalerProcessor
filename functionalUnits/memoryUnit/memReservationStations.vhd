@@ -39,6 +39,7 @@ architecture mixed of memReservationStations is
     signal enablesDestName: std_logic_vector(7 downto 0) := (others => '0');
     signal outEnables:      std_logic_vector(7 downto 0) := (others => '0');
     signal busies:          std_logic_vector(7 downto 0) := (others => '0');
+    signal busiesIn:        std_logic_vector(7 downto 0) := (others => '0');
     signal readies:         std_logic_vector(7 downto 0) := (others => '1');
     signal resets:          std_logic_vector(7 downto 0) := (others => '0');
 
@@ -86,7 +87,7 @@ architecture mixed of memReservationStations is
                 inEnables(3)                => enablesTag2(i),
                 inEnables(2)                => enablesValid1(i),
                 inEnables(1)                => enablesValid2(i),
-                inEnables(0)                => busies(i),
+                inEnables(0)                => busiesIn(i),
                 outEnable                   => outEnables(i),
                 ready                       => readies(i),
                 src2value                   => tempAddress,
@@ -120,6 +121,7 @@ architecture mixed of memReservationStations is
                 enablesValid1   <= (others => '0');
                 enablesTag2     <= (others => '0');
                 enablesValid2   <= (others => '0');
+                busiesIn        <= (others => '0');
             end if;
             
             if (reset = '1') then
@@ -137,6 +139,7 @@ architecture mixed of memReservationStations is
                             enablesTag2(i) <= '1';
                             enablesValid2(i) <= valid2;
                             busies(i) <= '1';
+                            busiesIn(i) <= '1';
                             found1 := 1;
                         end if;
                     end if;

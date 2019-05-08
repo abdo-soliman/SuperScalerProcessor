@@ -148,6 +148,7 @@ architecture rtl of ReservationStation is
 						changedSrc2FromBus := '1';
 					end if;
 					if (validMem = '1' and srcRegValidOutput1 = "0" and lastExcutedMemDestName = srcRegTagOutput1(2 downto 0)) then
+						report "busyRegOutput and src1";
 						srcRegValidInput1 <= "1";
 						srcRegValidEnable1 <= '1';
 						srcRegValidReset1 <= '0';
@@ -156,6 +157,7 @@ architecture rtl of ReservationStation is
 						changedSrc1FromBus := '1';
 					end if;
 					if (validMem = '1'  and srcRegValidOutput2 = "0" and lastExcutedMemDestName = srcRegTagOutput2(2 downto 0)) then
+						report "busyRegOutput and src1";
 						srcRegValidInput2 <= "1";
 						srcRegValidEnable2 <= '1';
 						srcRegValidReset2 <= '0';

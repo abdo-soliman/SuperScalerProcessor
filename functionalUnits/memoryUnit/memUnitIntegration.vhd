@@ -37,7 +37,8 @@ architecture rtl of memUnitIntegration is
     signal tempDataIn:          std_logic_vector(15 downto 0) := (others => '0');
     signal validLoadBuffers:    std_logic := '0';
 
-    signal tempLastExcutedMemDestName: std_logic_vector(2 downto 0) := (others => '0');
+    signal tempLastExcutedMemDestNameIn: std_logic_vector(2 downto 0) := (others => '0');
+    signal tempLastExcutedMemDestNameOut: std_logic_vector(2 downto 0) := (others => '0');
     signal notYet:  std_logic := '1';
     begin
         loadBuffers: entity work.memReservationStations
@@ -57,7 +58,9 @@ architecture rtl of memUnitIntegration is
                 issueDestName               => tempDestTag,
                 lastExcutedAluDestName      => lastExcutedAluDestName,
                 lastExcutedAluDestNameValue => lastExcutedAluDestNameValue,
-                lastExcutedMemDestName      => tempLastExcutedMemDestName,
+                -- lastExcutedMemDestName      => tempLastExcutedMemDestName,
+                lastExcutedMemDestNameIn    => tempLastExcutedMemDestNameIn,
+                lastExcutedMemDestNameOut   => tempLastExcutedMemDestNameOut,
                 lastExcutedMemDestNameValue => lastExcutedMemDestNameValue,
                 address                     => addressLoad,
                 full                        => full,
@@ -75,9 +78,12 @@ architecture rtl of memUnitIntegration is
             );
         
         notYet <= '0' when (notYet = '0' or validAlu = '1' or robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else '1';
+        tempLastExcutedMemDestNameIn <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1')
+            else tempLastExcutedMemDestNameOut;
+        -- tempLastExcutedMemDestName <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1');
         lastExcutedMemDestName <= (others => '0') when notYet = '1' else
             robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else
-            tempLastExcutedMemDestName when validLoadBuffers = '1';
+            tempLastExcutedMemDestNameOut when validLoadBuffers = '1';
 
         tempDestTag <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else
             instruction(2 downto 0) when issue = '1' else lastExcutedMemDestName;

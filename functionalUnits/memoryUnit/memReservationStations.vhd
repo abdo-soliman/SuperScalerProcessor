@@ -20,7 +20,8 @@ entity memReservationStations is
         issueDestName:                  in std_logic_vector(2 downto 0);
         lastExcutedAluDestName:         in std_logic_vector(2 downto 0);
         lastExcutedAluDestNameValue:    in std_logic_vector(n-1 downto 0);
-        lastExcutedMemDestName:         inout std_logic_vector(2 downto 0);
+        lastExcutedMemDestNameIn:       in std_logic_vector(2 downto 0);
+        lastExcutedMemDestNameOut:      out std_logic_vector(2 downto 0);
         lastExcutedMemDestNameValue:    in std_logic_vector(n-1 downto 0);
         address:                        out std_logic_vector(n-1 downto 0);
         full:                           out std_logic;
@@ -71,7 +72,7 @@ architecture mixed of memReservationStations is
                 validMem                    => validMem,
                 lastExcutedAluDestName      => lastExcutedAluDestName,
                 lastExcutedAluDestNameValue => lastExcutedAluDestNameValue,
-                lastExcutedMemDestName      => lastExcutedMemDestName,
+                lastExcutedMemDestName      => lastExcutedMemDestNameIn,
                 lastExcutedMemDestNameValue => lastExcutedMemDestNameValue,
                 destName                    => issueDestName,
                 inOpCode                    => "00000",
@@ -89,12 +90,13 @@ architecture mixed of memReservationStations is
                 outEnable                   => outEnables(i),
                 ready                       => readies(i),
                 src2value                   => tempAddress,
+                -- outDestName                 => lastExcutedMemDestName
                 outDestName                 => tempLastExcutedMemDestName
             );
         end generate genRs;
 
         notYet <= '0' when (notYet = '0' or outEnables /= "00000000000") else '1';
-        lastExcutedMemDestName <= (others => '0') when notYet = '1' else
+        lastExcutedMemDestNameOut <= (others => '0') when notYet = '1' else
             tempLastExcutedMemDestName when outEnables /= "00000000000";
         address <= (others => '0') when notYet = '1' else
             tempAddress when outEnables /= "00000000000";

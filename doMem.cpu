@@ -18,6 +18,13 @@ run
 force -freeze sim:/cpu/inputPort FFFF 0
 run
 force -freeze sim:/cpu/inputPort F320 0
+add wave -position end  sim:/cpu/dataMEMout
+add wave -position end  sim:/cpu/dataMEMtag
+add wave -position end  sim:/cpu/dataMEMtagValid
+add wave -position end  sim:/cpu/dataMEMinternalValid
+add wave -position 6  sim:/cpu/ROBisPop
+add wave -position end  sim:/cpu/ROBOutputAddress
+add wave -position end  sim:/cpu/ROBmemWriteEnable
 run
 run
 run

@@ -1,7 +1,8 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
-use IEEE.std_logic_unsigned.all;
-
+use IEEE.numeric_std.all;
+library work;
+use work.constants.all;
 entity CPU is
 	port (
 		clk: in 				std_logic 		:= '0';
@@ -70,6 +71,7 @@ architecture rtl of CPU is
 	signal dataMEMtagValid:			std_logic := '0';
 	signal dataMEMinternalValid:	std_logic := '0'; --don't ever use it in ROB
 
+	signal instructionToROB:		std_logic_vector(31 downto 0) := (others => '0');
 	signal ALUinstructionIn:		std_logic_vector(41 downto 0) := (others => '0');
 	signal ALUissue:				std_logic := '0';
 	signal ALUout:					std_logic_vector(15 downto 0) := (others => '0');
@@ -92,6 +94,9 @@ begin
 
 	outputPort <= ROBOutputValue when ROBportWriteEnable = '1'
 				else (others => 'Z');
+
+	instructionToROB <= instQueueOut when interrupt = '0'
+					else INT_OPCODE &  "000000000000000000000000000";
 
 	pc: entity work.mRegister
 	generic map(n => 16)

@@ -701,9 +701,15 @@ architecture rtl of ReorderBuffer is
             end if;
         elsif (opcodeType = "01") then
             setZeroSrc := '1';
+            rsAluValid <= '1';
+            robValid <= '1';
             if (opcode = SHR_OPCODE or opcode = SHL_OPCODE) then
                 -- stall <= '1';
                 --instQueueMode := '1';
+                -- rsAluValid <= '1';
+                -- robValid <= '1';  
+                report ">>>>>>>>>>>>>> shifting <<<<<<<<<<<<";
+                report toString(immediateValue);
                 valueSrc2 := immediateValue;
                 validSrc2 := '1';
             else
@@ -806,10 +812,15 @@ architecture rtl of ReorderBuffer is
             validSrc1 := '0';
         end if;
 
-        if (src2state = INEXECUTE and opcodeType = "01") then
-            valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
-            valueSrc2(15 downto 3) := (others => '0');
-            validSrc2 := '0';
+        if (opcode = SHL_OPCODE or opcode = SHR_OPCODE) then
+            null;
+        else
+            if (src2state = INEXECUTE and opcodeType = "01") then
+                report "clear src2";
+                valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
+                valueSrc2(15 downto 3) := (others => '0');
+                validSrc2 := '0';
+            end if;
         end if;
 
         if (lastStoreValid = '1' and opcode = LDD_OPCODE) then

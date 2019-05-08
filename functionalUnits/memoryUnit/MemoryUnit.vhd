@@ -32,7 +32,7 @@ architecture rtl of MemoryUnit is
             dataOut         => dataOut
         );
 
-        currentAddress <= address when mode(1) = '0' else sp when mode = "11" else sp;
+        currentAddress <= address when mode(1) = '0' else sp + 1 when mode = "11" else sp;
         invClk <= not clk;
         
         process (clk, mode, address, enable)
@@ -44,9 +44,8 @@ architecture rtl of MemoryUnit is
                         readWriteEnable <= '0';
                         -- currentAddress <= address;
                     end if;
-                elsif (mode = "11") then    -- pop
-                    if (clk = '0') then
-                        report "Hahaha";
+                elsif (clk'event and clk = '0' and mode = "11") then    -- pop
+                    if (clk'event and clk = '0') then
                         readWriteEnable <= '0';
                         -- currentAddress <= sp + 1;
                         sp <= sp + 1;

@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("two op.txt","w+")
+outFile = open("inter.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":
@@ -80,7 +80,6 @@ with open(inputFileName) as f:
              mynum += 1
              continue
         
-
         instruction = line[0]
         print(instruction)
         if len(line) > 1 :
@@ -99,7 +98,7 @@ with open(inputFileName) as f:
                 outFile.write("\n")
             else:     # 2 operand 
                 register2 = line.split(',')[1]
-                if instruction == 'SUB':
+                if instruction == 'SUB' or instruction == 'STD' or instruction == 'LDD':
                     line = opcode[instruction] + registers[register1] + registers[register2]
                 else:
                     line = opcode[instruction] + registers[register2] + registers[register1]

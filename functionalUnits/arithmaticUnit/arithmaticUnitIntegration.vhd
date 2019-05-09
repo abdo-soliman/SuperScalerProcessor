@@ -91,10 +91,19 @@ architecture rtl of arithmaticUnitIntegration is
         flags(1 downto 0) <= currentFlags(1 downto 0) when (validAlu = '1' and aluOp /= MOV_ALU_CODE) else outFlags(1 downto 0);
         lastExcutedAluDestNameValue <= tempLastExcutedAluDestNameValue when validAlu = '1';
 
-        process(setFlags) 
+        process (clk, setFlags, validAlu, aluOp)
         begin
+            if(clk'event and clk = '1' and setFlags = '1') then
+            inFlags <= robFlags;
+            elsif (aluOp = MOV_ALU_CODE) then
+             inFlags <= outFlags;
+            elsif ((validAlu = '1' and  (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE)) ) then
+             inFlags <= outFlags(2) & currentFlags(1 downto 0);
+            elsif ((validAlu = '1' and (not (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))) ) then
+             inFlags <= currentFlags; 
+            else 
+            inFlags <="000";
 
-
-
-        end if;
-end rtl
+            end if;
+        end process;
+end rtl;

@@ -54,7 +54,8 @@ entity ReorderBuffer is
         aluRsFull:                  in          std_logic := '0';
         memRsFull:                  in          std_logic := '0';
         currentPc:                  in          std_logic_vector(15 downto 0) := (others => '0');
-        instQueueNumberOfElements:  in          std_logic_vector(3 downto 0) := (others => '0')
+        instQueueNumberOfElements:  in          std_logic_vector(3 downto 0) := (others => '0');
+        InterruptMemoryIn:          in          std_logic_vector(15 downto 0)
         -------------------------------------------------------------------------------------
 
     );
@@ -100,7 +101,7 @@ architecture rtl of ReorderBuffer is
     signal waitingROB:      WAITING_ROB := (others => (others => '0'));
     --------------------------------------------------------------------------------
     type rType is array(0 to 7) of std_logic_vector(15 downto 0);
-    signal tempRegisters:       rType := (others => (others => '0'));
+    signal registerF:       rType := (others => (others => '0'));
 
     ----------------------------------------------------------------------------
     procedure updateTagAluMemory(variable    entry:             inout       std_logic_vector(width-1 downto 0);
@@ -134,10 +135,6 @@ architecture rtl of ReorderBuffer is
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
-                    report "Ya raab";
-                    report integer'image(index);
-                    report integer'image(memoryTagInt);
-
                     if(aluTagInt = index )then
                         entry(42 downto 27) := aluValue; --value
                     else
@@ -161,7 +158,7 @@ architecture rtl of ReorderBuffer is
                 end if;
             end if;
             
-            if (isTypeThree(OPcode) and OPcode /= RTI_OPCODE) then
+            if (isTypeThree(OPcode)) then
 
                 if(Execute(entry) = '0' and aluTagInt = WaitingTag(entry) and aluTagValid = '1') then
 
@@ -182,10 +179,11 @@ architecture rtl of ReorderBuffer is
                 end if;
 
             end if;
-
+            report toString(OPcode);
+            report toString(entry);
             if(OPcode = RTI_OPCODE) then 
-                
-                if(Execute(entry) = '0' and memoryTagInt = WaitingTag(entry) and memoryTagValid = '1') then 
+                report "tefteker?";
+                if(Execute(entry) = '0' and memoryTagInt = index and memoryTagValid = '1') then 
                     entry(2) := '1';
                     entry(6 downto 4) := mememoryValue(15 downto 13);
                 end if;
@@ -489,7 +487,6 @@ architecture rtl of ReorderBuffer is
 
                 if(Execute(entry) = '0' and Done(entry) = '0') then 
                     isPop := '1';
-                    
                     entry(1) := '1';
                 elsif Execute(entry) = '1' and Done(entry) = '1' then    
                     commited := true;
@@ -564,7 +561,8 @@ architecture rtl of ReorderBuffer is
                     signal         waitingROB:         inout WAITING_ROB;
                     signal         currentPc:          in std_logic_vector(15 downto 0);
                     signal         PortIn:             in std_logic_vector(15 downto 0);
-                    signal         numberOfElements:   in std_logic_vector(3 downto 0))is
+                    signal         numberOfElements:   in std_logic_vector(3 downto 0);
+                    signal         InterruptMemory:    in std_logic_vector(15 downto 0))is
 
     variable opcode:          std_logic_vector(4 downto 0) := (others => '0');
     variable opcodeType:      std_logic_vector(1 downto 0) := (others => '0');
@@ -718,8 +716,6 @@ architecture rtl of ReorderBuffer is
                 --instQueueMode := '1';
                 -- rsAluValid <= '1';
                 -- robValid <= '1';  
-                report ">>>>>>>>>>>>>> shifting <<<<<<<<<<<<";
-                report toString(immediateValue);
                 valueSrc2 := immediateValue;
                 validSrc2 := '1';
             else
@@ -808,7 +804,12 @@ architecture rtl of ReorderBuffer is
 
         robInstruction(9 downto 7) <= destRegister; --dest register ya3ny
         robInstruction(6 downto 4) <= waitingTag;
-        if(setZeroSrc = '1')then
+        if(opcode =  INT_OPCODE)then
+            robInstruction(9 downto 7) <= (others => '0'); --dest register ya3ny
+            robInstruction(6 downto 4) <= (others => '0');
+            robInstruction(25 downto 10) <= InterruptMemory;
+            robInstruction(42 downto 27) <= currentPC - numberOfelements;
+        elsif(setZeroSrc = '1')then
             robInstruction(0) <= '0';
             robInstruction(25 downto 10) <= (others => '0');
             robInstruction(26) <= '0';
@@ -835,7 +836,6 @@ architecture rtl of ReorderBuffer is
             null;
         else
             if (src2state = INEXECUTE and opcodeType = "01") then
-                report "clear src2";
                 valueSrc2(2 downto 0) := valueSrc2(15 downto 13);
                 valueSrc2(15 downto 3) := (others => '0');
                 validSrc2 := '0';
@@ -1071,10 +1071,14 @@ begin
                     tagToMemory <= readPointer;
                 end if;
 
+                if (getOpCode(inp) = RTI_OPCODE and pcWriteEnableV = '1') then
+                    flagsOut <= inp(5 downto 3);
+
+                end if;
                 if (commitedV and registerWriteEnableV = '1') then 
                     --TODO add RF Adapter
                     if (commitPopV = '1')then
-                        tempRegisters(to_integer(unsigned(destinationRegisterV))) <= mememoryValue;
+                        registerF(to_integer(unsigned(destinationRegisterV))) <= mememoryValue;
                         outputValueSignal <= mememoryValue;
 
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = INEXECUTE
@@ -1085,7 +1089,7 @@ begin
                         end if;
 
                     elsif(isPopV = '0')then
-                        tempRegisters(to_integer(unsigned(destinationRegisterV))) <= outputValueV;
+                        registerF(to_integer(unsigned(destinationRegisterV))) <= outputValueV;
                         if (registerState(to_integer(unsigned(destinationRegisterV))) = FLIGHT
                             and waitingROB(to_integer(unsigned(destinationRegisterV))) = readPointer) then 
 
@@ -1137,6 +1141,9 @@ begin
 
                 loopEntry := q(r);
 
+                report "2olly meen";
+                report toString(loopEntry);
+
                 updateTagAluMemory(
                             entry => loopEntry,
                             aluValue => aluValue,
@@ -1182,6 +1189,8 @@ begin
         elsif(pcWriteEnableSignal = '0' and instQueueWritten'event and instQueueWritten = '1') then
             temp1 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24))))))));
             temp2 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21))))))));
+
+            report toString(instruction);
             decode(
                 robFull => ROBFullSignal,
                 aluRsFull => aluRsFull,
@@ -1201,12 +1210,13 @@ begin
                 robInstruction => ROBentryToBeWritten,
                 instQueueEnable => instQueueShiftEnable,
                 instQueueMode => instQueueShiftMode,
-                r => tempRegisters,
+                r => registerF,
                 state => registerState,
                 waitingROB => waitingROB,
                 currentPc => currentPc,
                 PortIn => inPort,
-                numberOfElements => instQueueNumberOfElements);
+                numberOfElements => instQueueNumberOfElements,
+                InterruptMemory => InterruptMemoryIn);
 
 
         end if;

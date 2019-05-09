@@ -33,7 +33,9 @@ architecture rtl of memUnitIntegration is
     signal addressLoad:         std_logic_vector(15 downto 0) := (others => '0');
     signal address:             std_logic_vector(15 downto 0) := (others => '0');
     signal enableLoadOut:       std_logic := '1';
-    -- signal tempDestTag:         std_logic_vector(2 downto 0) := "ZZZ";
+
+    --signal tempDestTag:         std_logic_vector(2 downto 0) := "ZZZ";
+
     signal tempDataIn:          std_logic_vector(15 downto 0) := (others => '0');
     signal validLoadBuffers:    std_logic := '0';
 
@@ -85,8 +87,8 @@ architecture rtl of memUnitIntegration is
             robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else
             tempLastExcutedMemDestNameOut when validLoadBuffers = '1';
 
-        -- tempDestTag <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else
-        --     instruction(2 downto 0) when issue = '1' else lastExcutedMemDestName;
+        --tempDestTag <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else
+        --    instruction(2 downto 0) when issue = '1' else lastExcutedMemDestName;
 
         address <= robAddress when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else addressLoad;
 

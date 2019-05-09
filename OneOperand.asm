@@ -22,3 +22,10 @@ Dec R2         #R2= FFEE,C-->1 , N-->1, Z-->0
 out R1
 out R3
 out R2
+
+
+.ORG 100
+CLRC
+AND R0,R0    #N=0,Z=1
+out R6
+rti

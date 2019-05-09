@@ -33,7 +33,9 @@ architecture rtl of memUnitIntegration is
     signal addressLoad:         std_logic_vector(15 downto 0) := (others => '0');
     signal address:             std_logic_vector(15 downto 0) := (others => '0');
     signal enableLoadOut:       std_logic := '1';
+
     --signal tempDestTag:         std_logic_vector(2 downto 0) := "ZZZ";
+
     signal tempDataIn:          std_logic_vector(15 downto 0) := (others => '0');
     signal validLoadBuffers:    std_logic := '0';
 

@@ -211,7 +211,7 @@ begin
 
     rob: entity work.ReorderBuffer --Not all signals are connected to ROB
 	port map(
-		instruction => instQueueOut,
+		instruction => instructionToROB,
 		instQueueWritten => instQueueWritten,
         aluValue => ALUout,
         aluTag => ALUtag,
@@ -250,7 +250,8 @@ begin
         aluRsFull => ALUfull,
         memRsFull => loadBuffersFull,
         currentPc => pcOut,
-        instQueueNumberOfElements => instQueueNumberOfElements
+        instQueueNumberOfElements => instQueueNumberOfElements,
+        InterruptMemoryIn => ramOut(15 downto 0)
     );
 		
 	

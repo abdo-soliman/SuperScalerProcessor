@@ -32,7 +32,9 @@ architecture rtl of InstructionQueue is
 	
 begin
     output <= q(0)&q(1);
-    queueFull <= queueFullSignal;
+    queueFull <= '1' when (tail = "1000" and (enable = '0' or (enable = '1' and mode = '0')))
+                         or (tail = "0111" and enable = '0')
+                else '0';
     written <= writtenSignal;
     numberOfElementes <= tail;
 

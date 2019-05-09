@@ -50,7 +50,7 @@ registers['R7'] = '111'
 userInstructions = []
 inputFileName = "instruction.txt"
 mynum = 0
-outFile = open("jumps.txt","w+")
+outFile = open("inter.txt","w+")
 with open(inputFileName) as f:
     for line in f:
         if line == "\n":

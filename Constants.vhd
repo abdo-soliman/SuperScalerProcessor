@@ -349,7 +349,7 @@ function isTypeThree(opCode:   std_logic_vector(4 downto 0))
 begin
     if( isJMPFamily(opCode) or opCode = JMP_OPCODE or 
         opCode = CALL_OPCODE or opCode = RET_OPCODE or 
-        opCode = RTI_OPCODE) then
+        opCode = RTI_OPCODE or opCode = INT_OPCODE) then
         return true;
     else
         return false;

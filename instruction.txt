@@ -1,6 +1,5 @@
 # all numbers in hex format
 # we always start by reset signal
-#if you don't handle hazards add 3 NOPs
 #this is a commented line
 .ORG 0  #this means the the following line would be  at address  0 , and this is the reset address
 10
@@ -10,42 +9,23 @@
 100
 
 .ORG 10
-in R1     #R1=30
-in R2     #R2=50
-in R3     #R3=100
-in R4     #R4=300
-Push R4   #sp=FFFFFFFE, M[FFFFFFFF]=300
-JMP R1 
-INC R1	  # this statement shouldn't be executed,
-.ORG 30
-AND R1,R5   #R5=0 , Z = 1
-JZ R2      #Jump taken, Z = 0
-SETC        # this statement shouldn't be executed, C-->1
-.ORG 50
-JZ R1      #shouldn't be taken
-JC R3      #Jump Not taken
-NOT R5     #R5=FFFF, Z= 0, C--> not change, N=1
-in  R6     #R6=200, flag no change
-JN  R6     #jump taken, N = 0
-INC R1
+setC           #C --> 1
+NOP            #No change
+ClRC           #C --> 0
+NOT R1         #R1 =FFFF , C--> no change, N --> 1, Z --> 0
+inc R6	       #R1 =0000 , C --> 1 , N --> 0 , Z --> 1
+in R1	       #R1= 5,add 5 on the in port,flags no change	
+in R2          #R2= 10,add 10 on the in port, flags no change
+NOT R2	       #R2= FFEF, C--> no change, N -->1,Z-->0
+inc R1         #R1= 6, C --> 0, N -->0, Z-->0
+Dec R2         #R2= FFEE,C-->1 , N-->1, Z-->0
+out R1
+out R3
+out R2
+
+
 .ORG 100
 CLRC
 AND R0,R0    #N=0,Z=1
 out R6
 rti
-#check on load use
-.ORG 200
-SETC      #C-->1
-POP R6     #R6=300, SP=FFFFFFFF
-Call R6    #SP=FFFFFFFD, M[FFFFFFFF]=half next PC,M[FFFFFFFE]=other half next PC
-INC R6	  #R6=401, this statement shouldn't be executed till call returns, C--> 0, N-->0,Z-->0
-NOP
-NOP
-.ORG 300
-Add R3,R6 #R6=400
-Add R1,R2 #R1=80, C->0,N=0, Z=0
-ret
-SetC           #this shouldnot be executed
-.ORG 500
-NOP
-NOP

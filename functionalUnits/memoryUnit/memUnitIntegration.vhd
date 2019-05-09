@@ -77,7 +77,7 @@ architecture rtl of memUnitIntegration is
                 dataOut => lastExcutedMemDestNameValue
             );
         
-        notYet <= '0' when (notYet = '0' or validAlu = '1' or robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else '1';
+        -- notYet <= '0' when (notYet = '0' or validAlu = '1' or robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1') else '1';
         tempLastExcutedMemDestNameIn <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1')
             else tempLastExcutedMemDestNameOut;
         -- tempLastExcutedMemDestName <= robTag when (robStoreIssue = '1' or robPushIssue = '1' or robPopIssue = '1');

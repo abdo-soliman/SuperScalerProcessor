@@ -134,8 +134,10 @@ architecture rtl of ReorderBuffer is
                 if ((aluTagInt = index and aluTagValid = '1') or 
                     (memoryTagInt = index and memoryTagValid = '1')) then --no check on op code just the tag
 
-                    report "Hello my lady";
+                    report "Ya raab";
                     report integer'image(index);
+                    report integer'image(memoryTagInt);
+
                     if(aluTagInt = index )then
                         entry(42 downto 27) := aluValue; --value
                     else
@@ -199,8 +201,7 @@ architecture rtl of ReorderBuffer is
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
                     firstTag := DestinationAddressTag(entry);
-                    report "In jump";
-                    report integer'image(to_integer(unsigned(firstTag)));
+
                     if (DestinationAddressValid(entry) = '0') then 
 
                         if(aluTagValid = '1' and aluTag = firstTag) then
@@ -222,6 +223,8 @@ architecture rtl of ReorderBuffer is
                 if (aluTagValid = '1' or memoryTagValid = '1') then 
 
                     firstTag := DestinationAddressTag(entry);
+
+                    report toString(firstTag);
 
                     if (DestinationAddressValid(entry) = '0') then 
                         if(aluTagValid = '1' and aluTag = firstTag) then
@@ -360,6 +363,8 @@ architecture rtl of ReorderBuffer is
                     entry(1) := '1';
                 elsif (entryOpCode = JN_OPCODE and isNegativeSet(flags)) then
                     entry(1) := '1';
+                elsif (entryOpCode = JMP_OPCODE) then
+                    entry(1) := '1';
                 end if;
 
             end if;
@@ -390,9 +395,7 @@ architecture rtl of ReorderBuffer is
     variable entryOpCode: std_logic_vector(4 downto 0);
 
     begin
-        report "Trying to commit";
-        report toString(entry);
-        report toString(DestinationRegister(entry));
+
         entryOpCode := getOpCode(entry);
 
         registerWriteEnable := '0';
@@ -416,7 +419,6 @@ architecture rtl of ReorderBuffer is
                     registerWriteEnable := '1';
                     commitPop := '1';
                 else
-                    report "Why my nigga";
                     isPop := '1';
                     entry(1) := '1';
                 end if;
@@ -624,6 +626,14 @@ architecture rtl of ReorderBuffer is
         src2tag :=     waitingROB(to_integer(unsigned(src2)));
         regSrc2value := r(to_integer(unsigned(src2)));
 
+        if(robFull = '1') then 
+            robValid <= '0';
+            rsAluValid <= '0';          
+            rsMemValid <= '0';
+            instQueueEnable <= '0';
+            return;
+        end if;
+
         if(isAlueRSinstruction(instruction(15 downto 11) ) )then
             if(aluRsFull = '1' or robFull = '1')then
                 robValid <= '0';
@@ -741,8 +751,6 @@ architecture rtl of ReorderBuffer is
                 setZeroSrc := '1';
                 --instQueueMode := '1';
                 valueSrc2 := immediateValue;
-                report "7a";
-                report toString(immediateValue);
                 validSrc2 := '1';
             end if;
 
@@ -765,7 +773,7 @@ architecture rtl of ReorderBuffer is
                 destRegister := (others => '0');
                 robInstruction(6 downto 1) <= (others => '0'); --all except for the opcode and busy
             elsif (opcode = CALL_OPCODE) then
-                valueSrc1 := currentPc - numberOfElements - 1;
+                valueSrc1 := currentPc - numberOfElements + 1;
                 validSrc1 := '1';
 
                 if (src1state = AVAILABLE) then
@@ -786,7 +794,6 @@ architecture rtl of ReorderBuffer is
                 elsif (src1state = INEXECUTE) then
                     valueSrc2(15 downto 13) := src1tag;
                     valueSrc2(12 downto 0) := (others => '0');
-                    validSrc2 := '0';
                 elsif (src1state = FLIGHT) then
                     valueSrc2 := robSrc1value;
                     validSrc2 := '1';
@@ -857,12 +864,8 @@ architecture rtl of ReorderBuffer is
         if(writesBack(instruction(15 downto 11)))then
             waitingROB(to_integer(unsigned(destRegister))) <= rsDestName;
             if(instruction(15 downto 11) = IN_OPCODE)then
-                report "Why my bro";
-                report toString(destRegister);
                 state(to_integer(unsigned(destRegister))) <= FLIGHT;
             else 
-                report "Tell me why";
-                report toString(destRegister); 
                state(to_integer(unsigned(destRegister))) <= INEXECUTE;  
             end if;
         end if;
@@ -979,8 +982,6 @@ begin
 
                 inp := ROBentryToBeWritten;
 
-                report toString(ROBentryToBeWritten);
-
                 inputParser(
                             entry => inp,
                             q => q,
@@ -1030,8 +1031,6 @@ begin
             destRegisterGotValueV := false;
 
             if(ROBEmptySignal /= '1')then
-                report "Plz";
-                report toString(inp);
                 commitInstruction(
                     inp,
                     destinationRegisterV,
@@ -1061,8 +1060,6 @@ begin
                 isPopSignal <= isPopV;
                 flagsOut <= flagsOutV;
 
-                report toString(inp);
-
                 if (commitedV) then 
                     readPointer <= readPointer + 1;
                     ROBFullSignal <= '0';
@@ -1071,7 +1068,6 @@ begin
                 end if;
                 
                 if (isPopV = '1' or isStoreV = '1') then
-                    report "WHY WHY WHY";
                     tagToMemory <= readPointer;
                 end if;
 
@@ -1103,7 +1099,7 @@ begin
 
                 end if;
 
-                if (isPopV = '0' and pcWriteEnableV = '1') then --RET 
+                if (isPopV = '1' and pcWriteEnableV = '1') then --RET 
                     isRet <= '1';
                 end if;
 
@@ -1126,6 +1122,7 @@ begin
                     lastStoreValidSignal <= '0';
                     registerState <= (others => AVAILABLE);
                     ROBFullSignal <= '0';
+                    ROBissue <= '0';
                     --ReadPointerRotated <= '0';
                     --writePointerRotated <= '0';
                     --pcValueSignal <= outputValueSignal;
@@ -1154,7 +1151,9 @@ begin
                             destRegisterGotValue => destRegisterGotValueV
                             );
 
-                q(r) <= loopEntry;
+                if (loopEntry /= q(r)) then
+                    q(r) <= loopEntry;
+                end if;
 
                 if(destRegisterGotValueV) then 
                   if(registerState(to_integer(unsigned(destRegisterV))) = INEXECUTE
@@ -1180,10 +1179,9 @@ begin
 
         --------------------------------------------------------------------
         --Decoding
-        elsif(instQueueWritten'event and instQueueWritten = '1') then
+        elsif(pcWriteEnableSignal = '0' and instQueueWritten'event and instQueueWritten = '1') then
             temp1 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(26 downto 24))))))));
             temp2 := Value(q(to_integer(unsigned(waitingROB(to_integer(unsigned(instruction(23 downto 21))))))));
-            report toString(writePointer);
             decode(
                 robFull => ROBFullSignal,
                 aluRsFull => aluRsFull,

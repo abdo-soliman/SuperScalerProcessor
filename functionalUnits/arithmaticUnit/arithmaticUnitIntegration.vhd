@@ -83,10 +83,18 @@ architecture rtl of arithmaticUnitIntegration is
 			);
 
         flagsEnable <= '1' when validAlu = '1' or setFlags = '1' else  '0';
-        inFlags <= outFlags when aluOp = MOV_ALU_CODE else outFlags(2) & currentFlags(1 downto 0) when (validAlu = '1' and  (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))else
-            currentFlags when (validAlu = '1' and (not (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))) else
-            robFlags when setFlags = '1' else "000";
+        inFlags <= robFlags when setFlags = '1' else
+            outFlags when aluOp = MOV_ALU_CODE else
+            outFlags(2) & currentFlags(1 downto 0) when (validAlu = '1' and  (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE)) else
+            currentFlags when (validAlu = '1' and (not (aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE))) else "000";
         flags(2) <= outFlags(2) when (validAlu = '0' or aluOp = NOT_ALU_CODE or aluOp = AND_ALU_CODE or aluOp = OR_ALU_CODE or aluOp = MOV_ALU_CODE) else currentFlags(2);
         flags(1 downto 0) <= currentFlags(1 downto 0) when (validAlu = '1' and aluOp /= MOV_ALU_CODE) else outFlags(1 downto 0);
         lastExcutedAluDestNameValue <= tempLastExcutedAluDestNameValue when validAlu = '1';
-end rtl;
+
+        process(setFlags) 
+        begin
+
+
+
+        end if;
+end rtl

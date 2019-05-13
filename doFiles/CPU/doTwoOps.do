@@ -18,7 +18,7 @@ add wave -position end  sim:/cpu/outputPort
 add wave -position end  sim:/cpu/interrupt
 add wave -position end  sim:/cpu/inputPortReady
 add wave -position end  sim:/cpu/rob/readPointer
-mem load -i /home/abdo/Desktop/SuperScalerProcessor/twoOp.txt -format binary /cpu/insRam/ram
+mem load -i {/SuperScalerProcessor/Assembler/Compiled Files/twoOp.txt} -format binary /cpu/insRam/ram
 force -freeze sim:/cpu/reset 1 0
 force -freeze sim:/cpu/clk 0 0, 1 {50 ps} -r 100
 run

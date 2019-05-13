@@ -67,6 +67,7 @@ webtalk_pn.xml
 *.mti
 transcript
 *.wlf
+*vstf
 
 # generated folders
 iseconfig/
@@ -78,3 +79,4 @@ _xmsgs/
 # miscellaneous
 .vscode/
 work/
+tcl_stacktrace.txt

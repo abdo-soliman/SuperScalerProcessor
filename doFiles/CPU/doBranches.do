@@ -8,7 +8,7 @@ add wave -position end  sim:/cpu/inputPortReady
 add wave -position end  sim:/cpu/pcOut
 add wave -position end  sim:/cpu/rob/readPointer
 add wave -position end  sim:/cpu/flags
-mem load -i /home/ahmed/Downloads/SuperScalerProcessor/jumps.txt -format binary /cpu/insRam/ram
+mem load -i {/SuperScalerProcessor/Assembler/Compiled Files/jumps.txt} -format binary /cpu/insRam/ram
 force -freeze sim:/cpu/clk 0 0, 1 {50 ps} -r 100
 force -freeze sim:/cpu/reset 1 0
 run
